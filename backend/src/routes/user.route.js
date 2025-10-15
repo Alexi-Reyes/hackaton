@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import { createUser, getUsers, getUserById } from '../controllers/user.controller.js';
+import UserController from '../controllers/user.controller.js';
 
 const userRouter = Router();
 
-userRouter.get('/', getUsers);
+userRouter.get('/', UserController.getUsers);
 
-userRouter.get('/:id', getUserById);
+userRouter.get('/:id', UserController.getUserById);
 
-userRouter.post('/', createUser);
+userRouter.post('/', UserController.createUser);
 
 userRouter.put('/:id', (req, res) => {
     res.send(`Update user with ID: ${req.params.id}`);

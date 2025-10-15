@@ -1,6 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import connectDB from './src/db.js';
+import Database from './src/db.js';
 import userRouter from './src/routes/user.route.js';
 
 dotenv.config();
@@ -9,7 +9,7 @@ const app = express();
 // middlewares
 app.use(express.json());
 
-connectDB();
+Database.connect();
 
 
 app.use('/users', userRouter);
