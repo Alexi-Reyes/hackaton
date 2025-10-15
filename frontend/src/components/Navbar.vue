@@ -1,11 +1,15 @@
+<script setup>
+import { House, Search, MessagesSquare, Heart, CirclePlus, CircleUserRound } from 'lucide-vue-next';
+</script>
+
 <template>
   <div class="container">
-    <h3>Accueil</h3>
-    <h3>Recherche</h3>
-    <h3>Messages</h3>
-    <h3>J'aime</h3>
-    <h3>Post</h3>
-    <h3>Profil</h3>
+    <h3><House /> <span>Accueil</span></h3>
+    <h3><Search /> <span>Recherche</span></h3>
+    <h3><MessagesSquare /> <span>Messages</span></h3>
+    <h3><Heart /> <span>J'aime</span></h3>
+    <h3><CirclePlus /> <span>Post</span></h3>
+    <h3><CircleUserRound /> <span>Profil</span></h3>
   </div>
 </template>
 
@@ -24,12 +28,19 @@
 }
 
 h3 {
+  display: flex;           
+  align-items: center;    
   color: var(--text-main);
   font-weight: 500;
   padding: 15px 25px;
   cursor: pointer;
   transition: all 0.3s ease;
   border-left: 3px solid transparent;
+}
+
+h3 svg {
+  margin-right: 10px;      
+  flex-shrink: 0;         
 }
 
 h3:hover {
