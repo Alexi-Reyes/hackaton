@@ -1,4 +1,4 @@
-<script setup>
+<!-- <script setup>
 
 import Navbar from './components/Navbar.vue' 
 import Connexion from './components/Connexion.vue';
@@ -12,4 +12,15 @@ import Connexion from './components/Connexion.vue';
 
 <style scoped>
 
-</style>
+</style> -->
+
+
+<template>
+  <Navbar />
+  <router-view />
+</template>
+
+<script setup>
+import Navbar from './components/Navbar.vue'
+</script>
+

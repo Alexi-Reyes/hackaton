@@ -1,20 +1,36 @@
 <script setup>
-import { House, Search, MessagesSquare, Heart, CirclePlus, CircleUserRound } from 'lucide-vue-next';
+import { House, Search, MessagesSquare, Heart, CirclePlus, CircleUserRound } from 'lucide-vue-next'
 </script>
 
 <template>
   <div class="container">
-    <h3><House /> <span>Accueil</span></h3>
-    <h3><Search /> <span>Recherche</span></h3>
-    <h3><MessagesSquare /> <span>Messages</span></h3>
-    <h3><Heart /> <span>J'aime</span></h3>
-    <h3><CirclePlus /> <span>Post</span></h3>
-    <h3><CircleUserRound /> <span>Profil</span></h3>
+    <RouterLink to="/" class="nav-item">
+      <House /> <span>Accueil</span>
+    </RouterLink>
+
+    <RouterLink to="/search" class="nav-item">
+      <Search /> <span>Recherche</span>
+    </RouterLink>
+
+    <RouterLink to="/messages" class="nav-item">
+      <MessagesSquare /> <span>Messages</span>
+    </RouterLink>
+
+    <RouterLink to="/likes" class="nav-item">
+      <Heart /> <span>J'aime</span>
+    </RouterLink>
+
+    <RouterLink to="/post" class="nav-item">
+      <CirclePlus /> <span>Post</span>
+    </RouterLink>
+
+    <RouterLink to="/profile" class="nav-item">
+      <CircleUserRound /> <span>Profil</span>
+    </RouterLink>
   </div>
 </template>
 
 <style scoped>
-
 .container {
   display: flex;
   flex-direction: column;
@@ -27,26 +43,32 @@ import { House, Search, MessagesSquare, Heart, CirclePlus, CircleUserRound } fro
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 }
 
-h3 {
-  display: flex;           
-  align-items: center;    
+.nav-item {
+  display: flex;
+  align-items: center;
   color: var(--text-main);
   font-weight: 500;
   padding: 15px 25px;
-  cursor: pointer;
+  text-decoration: none;
   transition: all 0.3s ease;
   border-left: 3px solid transparent;
 }
 
-h3 svg {
-  margin-right: 10px;      
-  flex-shrink: 0;         
+.nav-item svg {
+  margin-right: 10px;
+  flex-shrink: 0;
 }
 
-h3:hover {
+.nav-item:hover {
   color: var(--text-hover);
   background: linear-gradient(90deg, rgba(201,166,107,0.15) 0%, transparent 100%);
   border-left: 3px solid var(--border-accent);
   transform: translateX(3px);
+}
+
+.router-link-exact-active {
+  color: var(--text-hover);
+  font-weight: bold;
+  border-left: 3px solid var(--border-accent);
 }
 </style>
