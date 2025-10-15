@@ -1,13 +1,20 @@
 // Import Express
 import express from 'express';
-const app = express();
+import dotenv from 'dotenv';
+import connectDB from './src/db.js';
 
-// Define a route
+dotenv.config();
+const app = express();
+app.use(express.json());
+
+connectDB();
+
 app.get('/hello', (req, res) => {
     res.send('Hello World');
 });
 
-// Start the server
-app.listen(3000, () => {
-    console.log('Server is running on http://localhost:3000');
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
 });
