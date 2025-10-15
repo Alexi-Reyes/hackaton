@@ -1,0 +1,107 @@
+import Post from '../models/post.model.js';
+import User from '../models/user.model.js';
+
+class PostController {
+    async createPost(req, res) {
+        try {
+            if (!req.body) {
+                return res.status(400).json({ msg: "Request body is missing" });
+            }
+
+            const { userId, content } = req.body;
+
+            if (!userId || !content) {
+                return res.status(400).json({ msg: 'Missing required fields' });
+            }
+
+            const userExists = await User.findById(userId);
+            if (!userExists) {
+                return res.status(404).json({ msg: 'User not found' });
+            }
+
+            const newPost = new Post({
+                userId,
+                content
+            });
+
+            await newPost.save();
+            return res.status(201).json({ msg: 'Post created successfully', post: newPost });
+        } catch (err) {
+            console.error(err.message);
+            return res.status(500).send('Server error');
+        }
+    }
+
+    async getPosts(req, res) {
+        try {
+            const posts = await Post.find().populate('userId', 'username profilePicture');
+            return res.status(200).json(posts);
+        } catch (err) {
+            console.error(err.message);
+            return res.status(500).send('Server error');
+        }
+    }
+
+    async getPostById(req, res) {
+        try {
+            const post = await Post.findById(req.params.id).populate('userId', 'username profilePicture');
+            if (!post) {
+                return res.status(404).json({ msg: 'Post not found' });
+            }
+            return res.status(200).json(post);
+        } catch (err) {
+            console.error(err.message);
+            if (err.kind === 'ObjectId') {
+                return res.status(400).json({ msg: 'Invalid post ID' });
+            }
+            return res.status(500).send('Server error');
+        }
+    }
+
+    async updatePost(req, res) {
+        try {
+            if (!req.body) {
+                return res.status(400).json({ msg: "Request body is missing" });
+            }
+
+            const { content } = req.body;
+            const updatedPost = await Post.findByIdAndUpdate(
+                req.params.id,
+                { content },
+                { new: true, runValidators: true }
+            );
+
+            if (!updatedPost) {
+                return res.status(404).json({ msg: 'Post not found' });
+            }
+
+            return res.status(200).json({ msg: 'Post updated successfully', post: updatedPost });
+        } catch (err) {
+            console.error(err.message);
+            if (err.kind === 'ObjectId') {
+                return res.status(400).json({ msg: 'Invalid post ID' });
+            }
+            return res.status(500).send('Server error');
+        }
+    }
+
+    async deletePost(req, res) {
+        try {
+            const deletedPost = await Post.findByIdAndDelete(req.params.id);
+
+            if (!deletedPost) {
+                return res.status(404).json({ msg: 'Post not found' });
+            }
+
+            return res.status(200).json({ msg: 'Post deleted successfully' });
+        } catch (err) {
+            console.error(err.message);
+            if (err.kind === 'ObjectId') {
+                return res.status(400).json({ msg: 'Invalid post ID' });
+            }
+            return res.status(500).send('Server error');
+        }
+    }
+}
+
+export default new PostController();
