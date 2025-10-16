@@ -1,18 +1,11 @@
-<!-- <script setup>
-
-import Navbar from './components/Navbar.vue' 
-import Connexion from './components/Connexion.vue';
-</script>
-
-<template>
-  <Navbar />
-  <Connexion />
-  
-</template>
-
 <style scoped>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-</style> -->
+</style>
 
 
 <template>
@@ -26,5 +19,8 @@ import Connexion from './components/Connexion.vue';
 
 <script setup>
 import Navbar from './components/Navbar.vue'
+export default {
+  name: 'App'
+};
 </script>
 

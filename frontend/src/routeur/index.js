@@ -13,7 +13,17 @@ const routes = [
   { path: '/messages', name: 'Messages', component: Messages },
   { path: '/likes', name: 'Likes', component: Likes },
   { path: '/post', name: 'Post', component: Post },
-  { path: '/profile', name: 'Profile', component: Profile }
+  { path: '/profile', name: 'Profile', component: Profile },
+  {
+    path: '/login',
+    name: 'Login',
+    component: LoginPage
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: RegisterPage
+  }
 ]
 
 const router = createRouter({
