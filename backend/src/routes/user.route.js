@@ -12,7 +12,7 @@ userRouter.get('/', UserController.getUsers);
 
 userRouter.get('/:id', UserController.getUserById);
 
-userRouter.post('/', UserController.createUser);
+userRouter.post('/register', UserController.createUser);
 
 userRouter.put('/:id', authMiddleware, (req, res) => {
     res.send(`Update user with ID: ${req.params.id}`);
