@@ -15,7 +15,7 @@ onMounted(async () => {
 // 🔹 Récupérer l'utilisateur connecté
 const getCurrentUser = async () => {
   try {
-    const res = await fetch('http://localhost:3000/users/profile', { credentials: 'include' })
+    const res = await fetch(`${import.meta.env.BACKEND_URL}/users/profile`, { credentials: 'include' })
     if (res.ok) {
       user.value = await res.json()
     }
@@ -29,7 +29,7 @@ const loadPosts = async () => {
   loading.value = true
   error.value = null
   try {
-    const res = await fetch('http://localhost:3000/posts', { credentials: 'include' })
+    const res = await fetch(`${import.meta.env.BACKEND_URL}/posts`, { credentials: 'include' })
     if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
     const data = await res.json()
     posts.value = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -37,7 +37,7 @@ const loadPosts = async () => {
     // 🔹 Vérifie si l'utilisateur a déjà liké chaque post
     if (user.value) {
       for (const post of posts.value) {
-        const resLikes = await fetch(`http://localhost:3000/likes/post/${post._id}`, {
+        const resLikes = await fetch(`${import.meta.env.BACKEND_URL}/likes/post/${post._id}`, {
           credentials: 'include'
         })
         if (resLikes.ok) {
@@ -69,7 +69,7 @@ const toggleLike = async (post) => {
   const alreadyLiked = post.userLiked
 
   try {
-    const res = await fetch(`http://localhost:3000/likes`, {
+    const res = await fetch(`${import.meta.env.BACKEND_URL}/likes`, {
       method: alreadyLiked ? 'DELETE' : 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
