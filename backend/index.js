@@ -5,6 +5,8 @@ import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
+import { fileURLToPath } from 'url';
+import path from 'path';
 import Database from './src/db.js';
 import userRouter from './src/routes/user.route.js';
 import postRouter from './src/routes/post.route.js';
