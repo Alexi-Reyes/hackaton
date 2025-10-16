@@ -64,8 +64,7 @@ class LikeController {
                 return res.status(404).json({ msg: 'Like not found or user did not like this post' });
             }
 
-
-            await Post.findByIdAndUpdate(postId, { $inc: { userId: -1 } });
+            await Post.findByIdAndUpdate(postId, { $inc: { likesCount: -1 } });
 
             return res.status(200).json({ msg: 'Post unliked successfully' });
         } catch (err) {
@@ -76,8 +75,8 @@ class LikeController {
 
     async getLikesByPostId(req, res) {
         try {
-            const likes = await Like.find({ post_id: req.params.postId })
-                .populate('user_id', 'username profilePicture');
+            const likes = await Like.find({ postId: req.params.postId })
+                .populate('userId', 'username profilePicture')
             return res.status(200).json(likes);
         } catch (err) {
             console.error(err.message);
