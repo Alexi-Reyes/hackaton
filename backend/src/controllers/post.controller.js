@@ -3,34 +3,26 @@ import User from '../models/user.model.js';
 
 class PostController {
     async createPost(req, res) {
-        try {
-            if (!req.body) {
-                return res.status(400).json({ msg: "Request body is missing" });
-            }
+    try {
+        const { content } = req.body;
 
-            const { userId, content } = req.body;
-
-            if (!userId || !content) {
-                return res.status(400).json({ msg: 'Missing required fields' });
-            }
-
-            const userExists = await User.findById(userId);
-            if (!userExists) {
-                return res.status(404).json({ msg: 'User not found' });
-            }
-
-            const newPost = new Post({
-                userId,
-                content
-            });
-
-            await newPost.save();
-            return res.status(201).json({ msg: 'Post created successfully', post: newPost });
-        } catch (err) {
-            console.error(err.message);
-            return res.status(500).send('Server error');
+        if (!content || content.trim() === '') {
+            return res.status(400).json({ msg: "Le contenu est requis" });
         }
+
+        const newPost = new Post({
+            userId: req.user._id,
+            content
+        });
+
+        await newPost.save();
+        return res.status(201).json({ msg: 'Post créé avec succès', post: newPost });
+    } catch (err) {
+        console.error(err.message);
+        return res.status(500).send('Server error');
     }
+}
+
 
     async getPosts(req, res) {
         try {
