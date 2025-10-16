@@ -6,6 +6,8 @@ import Messages from '../pages/Messages.vue'
 import Likes from '../pages/Likes.vue'
 import Post from '../pages/Post.vue'
 import Profile from '../pages/Profile.vue'
+import Login from '../pages/Login.vue'
+import Register from '../pages/Register.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -17,12 +19,12 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: LoginPage
+    component: Login
   },
   {
     path: '/register',
     name: 'Register',
-    component: RegisterPage
+    component: Register
   }
 ]
 

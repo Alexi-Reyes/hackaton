@@ -37,7 +37,7 @@
 
 <script>
 export default {
-  name: 'LoginPage',
+  name: 'Login',
   data() {
     return {
       email: '',
@@ -59,7 +59,6 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0a0a0a;
   padding: 1rem;
 }
 

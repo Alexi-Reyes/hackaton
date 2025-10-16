@@ -12,11 +12,7 @@
     "axios": "^1.12.2",
     "lucide-vue-next": "^0.545.0",
     "vue": "^3.5.22",
-<<<<<<< Updated upstream
-    "vue-router": "^4.6.0"
-=======
     "vue-router": "^4.6.3"
->>>>>>> Stashed changes
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.1",

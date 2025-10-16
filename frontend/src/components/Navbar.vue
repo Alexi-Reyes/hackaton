@@ -1,5 +1,5 @@
 <script setup>
-import { House, Search, MessagesSquare, Heart, CirclePlus, CircleUserRound } from 'lucide-vue-next'
+import { House, Search, MessagesSquare, Heart, CirclePlus, CircleUserRound, LogIn } from 'lucide-vue-next'
 </script>
 
 <template>
@@ -26,6 +26,10 @@ import { House, Search, MessagesSquare, Heart, CirclePlus, CircleUserRound } fro
 
     <RouterLink to="/profile" class="nav-item">
       <CircleUserRound /> <span>Profil</span>
+    </RouterLink>
+
+    <RouterLink to="/login" class="nav-item">
+      <LogIn /> <span>Login</span>
     </RouterLink>
   </div>
 </template>

@@ -55,7 +55,7 @@
 
 <script>
 export default {
-  name: 'RegisterPage',
+  name: 'Register',
   data() {
     return {
       name: '',
@@ -76,7 +76,6 @@ export default {
         password: this.password
       });
       alert('Inscription réussie !');
-      // Ajouter ici votre logique d'inscription
     }
   }
 };
@@ -88,7 +87,6 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0a0a0a;
   padding: 1rem;
 }
 
