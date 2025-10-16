@@ -18,7 +18,7 @@ const submitPost = async () => {
   }
 
   try {
-    const res = await fetch('http://localhost:3000/posts', {
+    const res = await fetch(`${import.meta.env.BACKEND_URL}/posts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include', 
