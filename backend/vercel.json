@@ -8,7 +8,19 @@
   },
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/users/(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/posts/(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/comments/(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/likes/(.*)",
       "dest": "index.js"
     }
   ]
