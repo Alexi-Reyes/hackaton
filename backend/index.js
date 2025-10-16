@@ -39,11 +39,11 @@ app.use('/comments', commentRouter);
 app.use('/likes', likeRouter);
 
 // Swagger UI setup
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const swaggerFilePath = path.join(__dirname, 'swagger.yaml');
-const swaggerDocument = YAML.load(swaggerFilePath);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+// const swaggerFilePath = path.join(__dirname, 'swagger.yaml');
+// const swaggerDocument = YAML.load(swaggerFilePath);
+// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
