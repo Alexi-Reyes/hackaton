@@ -7,6 +7,7 @@ const userRouter = Router();
 userRouter.post('/login', UserController.loginUser);
 userRouter.post('/logout', UserController.logoutUser);
 userRouter.get('/profile', authMiddleware, UserController.getUserProfile);
+userRouter.get('/status', authMiddleware, UserController.checkUserStatus);
 
 userRouter.get('/', UserController.getUsers);
 

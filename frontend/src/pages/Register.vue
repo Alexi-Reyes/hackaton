@@ -6,9 +6,9 @@
       <form @submit.prevent="handleRegister">
         <div class="input-group">
           <input
-            v-model="name"
+            v-model="username"
             type="text"
-            placeholder="Nom complet"
+            placeholder="Nom d'utilisateur"
             required
           />
         </div>
@@ -54,28 +54,42 @@
 </template>
 
 <script>
+import axios from 'axios';
+import { useRouter } from 'vue-router';
+
 export default {
   name: 'Register',
+  setup() {
+    const router = useRouter();
+    return { router };
+  },
   data() {
     return {
-      name: '',
+      username: '',
       email: '',
       password: '',
       confirmPassword: ''
     };
   },
   methods: {
-    handleRegister() {
+    async handleRegister() {
       if (this.password !== this.confirmPassword) {
         alert('Les mots de passe ne correspondent pas');
         return;
       }
-      console.log('Inscription:', {
-        name: this.name,
-        email: this.email,
-        password: this.password
-      });
-      alert('Inscription réussie !');
+      try {
+        const response = await axios.post('http://localhost:3000/users/register', {
+          username: this.username,
+          email: this.email,
+          password: this.password
+        });
+        console.log('Inscription réussie:', response.data);
+        alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
+        this.router.push('/login');
+      } catch (error) {
+        console.error('Erreur lors de l\'inscription:', error.response ? error.response.data : error.message);
+        alert('Erreur lors de l\'inscription: ' + (error.response ? error.response.data.message : error.message));
+      }
     }
   }
 };

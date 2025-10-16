@@ -70,10 +70,14 @@ class UserController {
                 return res.status(400).json({ msg: 'Missing required fields' });
             }
 
-            const user = await User.findOne({ email }).select(password);
+            const user = await User.findOne({ email }).select('+password');
+            if (!user) {
+                return res.status(400).json({ msg: 'User not found' });
+            }
+
             const isMatch = await bcrypt.compare(password, user.password);
-            if (!user || !isMatch) {
-                return res.status(400).json({ msg: 'Invalid credentials' });
+            if (!isMatch) {
+                return res.status(400).json({ msg: 'Incorrect password' });
             }
 
             req.session.userId = user._id;
@@ -114,6 +118,15 @@ class UserController {
                 return res.status(404).json({ msg: 'User not found' });
             }
             return res.status(200).json(user);
+        } catch (err) {
+            console.error(err.message);
+            return res.status(500).send('Server error');
+        }
+    }
+
+    async checkUserStatus(req, res) {
+        try {
+            return res.status(200).json({ msg: 'User is logged in' });
         } catch (err) {
             console.error(err.message);
             return res.status(500).send('Server error');

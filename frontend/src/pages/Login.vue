@@ -36,8 +36,15 @@
 </template>
 
 <script>
+import axios from 'axios';
+import { useRouter } from 'vue-router';
+
 export default {
   name: 'Login',
+  setup() {
+    const router = useRouter();
+    return { router };
+  },
   data() {
     return {
       email: '',
@@ -45,9 +52,25 @@ export default {
     };
   },
   methods: {
-    handleLogin() {
-      console.log('Connexion:', { email: this.email, password: this.password });
-      alert('Connexion réussie !');
+    async handleLogin() {
+      try {
+        const response = await axios.post('http://localhost:3000/users/login', {
+          email: this.email,
+          password: this.password
+        });
+        console.log('Connexion réussie:', response.data);
+        alert('Connexion réussie !');
+        this.router.push('/');
+      } catch (error) {
+        console.error('Erreur lors de la connexion:', error.response ? error.response.data : error.message);
+        let errorMessage = 'Erreur lors de la connexion.';
+        if (error.response && error.response.data && error.response.data.msg) {
+          errorMessage = 'Erreur lors de la connexion: ' + error.response.data.msg;
+        } else if (error.message) {
+          errorMessage = 'Erreur lors de la connexion: ' + error.message;
+        }
+        alert(errorMessage);
+      }
     }
   }
 };
