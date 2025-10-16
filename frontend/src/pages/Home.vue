@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { Heart } from 'lucide-vue-next'
 
 const posts = ref([])
@@ -12,7 +12,6 @@ onMounted(async () => {
   await loadPosts()
 })
 
-// 🔹 Récupérer l'utilisateur connecté
 const getCurrentUser = async () => {
   try {
     const res = await fetch('http://localhost:3000/users/profile', { credentials: 'include' })
@@ -24,7 +23,6 @@ const getCurrentUser = async () => {
   }
 }
 
-// 🔹 Charger les posts
 const loadPosts = async () => {
   loading.value = true
   error.value = null
@@ -34,7 +32,6 @@ const loadPosts = async () => {
     const data = await res.json()
     posts.value = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
-    // 🔹 Vérifie si l'utilisateur a déjà liké chaque post
     if (user.value) {
       for (const post of posts.value) {
         const resLikes = await fetch(`http://localhost:3000/likes/post/${post._id}`, {
@@ -43,7 +40,6 @@ const loadPosts = async () => {
         if (resLikes.ok) {
           const likes = await resLikes.json()
           post.userLiked = likes.some(like => like.userId._id === user.value._id)
-
         } else {
           post.userLiked = false
         }
@@ -58,8 +54,6 @@ const loadPosts = async () => {
   }
 }
 
-
-// 🔹 Liker ou unliker un post
 const toggleLike = async (post) => {
   if (!user.value) {
     alert('Vous devez être connecté pour liker un post.')
@@ -84,6 +78,20 @@ const toggleLike = async (post) => {
     console.error('Erreur lors du like:', err)
   }
 }
+
+const getAvatar = (postUser) => {
+  if (!postUser) return defaultAvatar('U')
+  if (postUser.profilePicture) return postUser.profilePicture
+  return defaultAvatar(postUser.username.charAt(0).toUpperCase())
+}
+
+const defaultAvatar = (letter) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50">
+    <rect width="50" height="50" fill="#ccc"/>
+    <text x="50%" y="50%" font-size="24" text-anchor="middle" dominant-baseline="central" fill="#000">${letter}</text>
+  </svg>`
+  return `data:image/svg+xml;base64,${btoa(svg)}`
+}
 </script>
 
 <template>
@@ -100,7 +108,10 @@ const toggleLike = async (post) => {
 
       <div v-for="post in posts" :key="post._id" class="post">
         <div class="post-header">
-          <span class="users">{{ post.userId?.username || 'Utilisateur inconnu' }}</span>
+          <div class="user-info">
+            <img :src="getAvatar(post.userId)" class="avatar" />
+            <span class="username">{{ post.userId?.username || 'Utilisateur inconnu' }}</span>
+          </div>
           <span class="date">{{ new Date(post.createdAt).toLocaleString() }}</span>
         </div>
 
@@ -174,6 +185,24 @@ h1 {
   margin-bottom: 0.5rem;
 }
 
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-accent);
+}
+
+.username {
+  font-weight: bold;
+}
+
 .date {
   font-style: italic;
   color: var(--border-accent);
@@ -210,5 +239,4 @@ h1 {
   color: red;
   fill: red;
 }
-
 </style>

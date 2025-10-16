@@ -40,9 +40,21 @@
           />
         </div>
 
-        <button type="submit" class="btn">
-          S'inscrire
-        </button>
+        <div class="input-group">
+          <label class="label">Choisir un avatar (optionnel)</label>
+          <input type="file" accept="image/*" @change="handleFileUpload" />
+          <input
+            v-model="avatarUrl"
+            type="url"
+            placeholder="Ou collez une URL d’image"
+          />
+        </div>
+
+        <div v-if="previewImage" class="preview">
+          <img :src="previewImage" alt="Aperçu de l'avatar" />
+        </div>
+
+        <button type="submit" class="btn">S'inscrire</button>
       </form>
 
       <p class="footer-text">
@@ -54,44 +66,73 @@
 </template>
 
 <script>
-import axios from 'axios';
-import { useRouter } from 'vue-router';
+import axios from "axios";
+import { useRouter } from "vue-router";
 
 export default {
-  name: 'Register',
+  name: "Register",
   setup() {
     const router = useRouter();
     return { router };
   },
   data() {
     return {
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: ''
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      avatarFile: null,     
+      avatarUrl: "",         
+      previewImage: null,   
     };
   },
   methods: {
+    handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      this.avatarFile = file;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.previewImage = e.target.result; 
+      };
+      reader.readAsDataURL(file);
+    },
+
     async handleRegister() {
       if (this.password !== this.confirmPassword) {
-        alert('Les mots de passe ne correspondent pas');
+        alert("Les mots de passe ne correspondent pas");
         return;
       }
+
+      let profilePicture = this.previewImage || this.avatarUrl || null;
+
       try {
-        const response = await axios.post('http://localhost:3000/users/register', {
-          username: this.username,
-          email: this.email,
-          password: this.password
-        });
-        console.log('Inscription réussie:', response.data);
-        alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
-        this.router.push('/login');
+        const response = await axios.post(
+          "http://localhost:3000/users/register",
+          {
+            username: this.username,
+            email: this.email,
+            password: this.password,
+            profilePicture,
+          }
+        );
+
+        console.log("Inscription réussie:", response.data);
+        alert("Inscription réussie ! Vous pouvez maintenant vous connecter.");
+        this.router.push("/login");
       } catch (error) {
-        console.error('Erreur lors de l\'inscription:', error.response ? error.response.data : error.message);
-        alert('Erreur lors de l\'inscription: ' + (error.response ? error.response.data.message : error.message));
+        console.error(
+          "Erreur lors de l'inscription:",
+          error.response ? error.response.data : error.message
+        );
+        alert(
+          "Erreur lors de l'inscription: " +
+            (error.response ? error.response.data.msg : error.message)
+        );
       }
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -126,7 +167,12 @@ h1 {
   margin-bottom: 1rem;
 }
 
-input {
+input[type="file"] {
+  color: #ffffff;
+}
+
+input,
+input[type="url"] {
   width: 100%;
   padding: 0.75rem 1rem;
   background: #0a0a0a;
@@ -147,6 +193,19 @@ input:focus {
   border-color: #6366f1;
   background: #1a1a1a;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.preview {
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.preview img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid #6366f1;
 }
 
 .btn {
@@ -186,5 +245,12 @@ input:focus {
 .footer-text a:hover {
   color: #9797a3;
   text-decoration: underline;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #ffffff;
+  font-weight: 600;
 }
 </style>

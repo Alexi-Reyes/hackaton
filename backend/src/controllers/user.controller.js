@@ -2,13 +2,9 @@ import User from '../models/user.model.js'
 import bcrypt from 'bcryptjs';
 
 class UserController {
-    async createUser(req, res) {
+   async createUser(req, res) {
         try {
-            if (!req.body) {
-                return res.status(400).json({ msg: "Request body is missing" });
-            }
-
-            const { username, email, password } = req.body;
+            const { username, email, password, profilePicture } = req.body;
 
             if (!username || !email || !password) {
                 return res.status(400).json({ msg: "Missing required fields" });
@@ -21,7 +17,8 @@ class UserController {
             let user = new User({
                 username,
                 email,
-                password
+                password,
+                profilePicture: profilePicture || null
             });
 
             const salt = await bcrypt.genSalt(10);
@@ -29,7 +26,10 @@ class UserController {
 
             await user.save();
 
-            return res.status(201).json({ msg: 'User registered successfully', user: { id: user._id, username: user.username, email: user.email } });
+            return res.status(201).json({
+                msg: 'User registered successfully',
+                user: { id: user._id, username: user.username, email: user.email, profilePicture: user.profilePicture }
+            });
         } catch (err) {
             console.error(err.message);
             return res.status(500).send('Server error');
