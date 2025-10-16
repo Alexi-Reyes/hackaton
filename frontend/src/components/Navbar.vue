@@ -1,5 +1,40 @@
 <script setup>
-import { House, Search, MessagesSquare, Heart, CirclePlus, CircleUserRound, LogIn } from 'lucide-vue-next'
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import axios from 'axios';
+import { House, Search, MessagesSquare, Heart, CirclePlus, CircleUserRound, LogIn, LogOut } from 'lucide-vue-next';
+
+const isLoggedIn = ref(false);
+const router = useRouter();
+
+const checkLoginStatus = async () => {
+  try {
+    await axios.get('http://localhost:3000/users/status');
+    isLoggedIn.value = true;
+  } catch (error) {
+    isLoggedIn.value = false;
+  }
+};
+
+const handleLogout = async () => {
+  try {
+    await axios.post('http://localhost:3000/users/logout');
+    isLoggedIn.value = false;
+    alert('Déconnexion réussie !');
+    router.push('/login');
+  } catch (error) {
+    console.error('Erreur lors de la déconnexion:', error);
+    alert('Erreur lors de la déconnexion.');
+  }
+};
+
+onMounted(() => {
+  checkLoginStatus();
+});
+
+router.afterEach(() => {
+  checkLoginStatus();
+});
 </script>
 
 <template>
@@ -28,9 +63,12 @@ import { House, Search, MessagesSquare, Heart, CirclePlus, CircleUserRound, LogI
       <CircleUserRound /> <span>Profil</span>
     </RouterLink>
 
-    <RouterLink to="/login" class="nav-item">
+    <RouterLink v-if="!isLoggedIn" to="/login" class="nav-item">
       <LogIn /> <span>Login</span>
     </RouterLink>
+    <a v-else @click="handleLogout" class="nav-item">
+      <LogOut /> <span>Logout</span>
+    </a>
   </div>
 </template>
 
