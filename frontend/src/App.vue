@@ -16,8 +16,12 @@ import Connexion from './components/Connexion.vue';
 
 
 <template>
-  <Navbar />
-  <router-view />
+  <div class="app-container">
+    <Navbar />
+    <main class="main-content">
+      <router-view />
+    </main>
+  </div>
 </template>
 
 <script setup>
