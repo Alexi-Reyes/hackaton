@@ -13,11 +13,13 @@
   --border-accent: #c0c0c0;   
   --border-accent-black: #333333;
   --input-bg: #2c2c2c;          
-  --button-bg: #000000;        
+  --button-bg: #000000;  
+  --button-bg-white: #ffffff;      
   --button-text-white: #ffffff;       
   --button-text-black: #333333;
   --button-hover-bg-black: #333333;   
   --button-hover-bg-white: #ffffff;
+  --button-hover-bg-grey: #d7d7d7;
 }
 
 body {

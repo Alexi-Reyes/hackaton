@@ -62,6 +62,31 @@ class UserController {
         }
     }
 
+    async updateUser(req, res) {
+        try {
+            if (!req.body) {
+                return res.status(400).json({ msg: "Request body is missing" });
+            }
+            const { username, email } = req.body;
+            const updatedUser = await User.findByIdAndUpdate(
+                req.params.id,
+                { username, email },
+                { new: true, runValidators: true }
+            );
+            if (!updatedUser) {
+                return res.status(404).json({ msg: 'User not found' });
+            }
+            return res.status(200).json({ msg: 'User updated successfully', user: updatedUser });
+        } catch (err) {
+            console.error(err.message);
+            if (err.kind === 'ObjectId') {
+                return res.status(400).json({ msg: 'Invalid user ID' });
+            }
+            return res.status(500).send('Server error');
+        }
+    }
+                
+
     async loginUser(req, res) {
         try {
             const { email, password } = req.body;
