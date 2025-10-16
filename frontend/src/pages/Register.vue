@@ -78,7 +78,7 @@ export default {
         return;
       }
       try {
-        const response = await axios.post('http://localhost:3000/users/register', {
+        const response = await axios.post(`${import.meta.env.BACKEND_URL}/users/register`, {
           username: this.username,
           email: this.email,
           password: this.password

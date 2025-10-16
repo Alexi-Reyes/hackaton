@@ -54,7 +54,7 @@ export default {
   methods: {
     async handleLogin() {
       try {
-        const response = await axios.post('http://localhost:3000/users/login', {
+        const response = await axios.post(`${import.meta.env.BACKEND_URL}/users/login`, {
           email: this.email,
           password: this.password
         });

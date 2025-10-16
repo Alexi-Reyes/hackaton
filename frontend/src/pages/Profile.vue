@@ -14,7 +14,7 @@ onMounted(async () => {
 const loadProfile = async () => {
   loading.value = true
   try {
-    const res = await fetch('http://localhost:3000/users/profile', {
+    const res = await fetch(`${import.meta.env.BACKEND_URL}/users/profile`, {
       credentials: 'include',
     })
     if (!res.ok) throw new Error("Impossible de charger le profil")
@@ -36,7 +36,7 @@ const toggleEdit = () => {
 
 const saveProfile = async () => {
   try {
-    const res = await fetch(`http://localhost:3000/users/${user.value._id}`, {
+    const res = await fetch(`${import.meta.env.BACKEND_URL}/users/${user.value._id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',

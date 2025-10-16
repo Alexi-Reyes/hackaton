@@ -9,7 +9,7 @@ const router = useRouter();
 
 const checkLoginStatus = async () => {
   try {
-    await axios.get('http://localhost:3000/users/status');
+    await axios.get(`${import.meta.env.BACKEND_URL}/users/status`);
     isLoggedIn.value = true;
   } catch (error) {
     isLoggedIn.value = false;
@@ -18,7 +18,7 @@ const checkLoginStatus = async () => {
 
 const handleLogout = async () => {
   try {
-    await axios.post('http://localhost:3000/users/logout');
+    await axios.post(`${import.meta.env.BACKEND_URL}/users/logout`);
     isLoggedIn.value = false;
     alert('Déconnexion réussie !');
     router.push('/login');
