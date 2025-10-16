@@ -13,12 +13,24 @@
   ],
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/users/(.*)",
+      "dest": "backend/index.js"
+    },
+    {
+      "src": "/posts/(.*)",
+      "dest": "backend/index.js"
+    },
+    {
+      "src": "/comments/(.*)",
+      "dest": "backend/index.js"
+    },
+    {
+      "src": "/likes/(.*)",
       "dest": "backend/index.js"
     },
     {
       "src": "/(.*)",
-      "dest": "frontend/dist/$1"
+      "dest": "frontend/dist/index.html"
     }
   ]
 }
