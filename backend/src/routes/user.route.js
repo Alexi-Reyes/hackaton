@@ -15,9 +15,7 @@ userRouter.get('/:id', UserController.getUserById);
 
 userRouter.post('/register', UserController.createUser);
 
-userRouter.put('/:id', authMiddleware, (req, res) => {
-    res.send(`Update user with ID: ${req.params.id}`);
-});
+userRouter.put('/:id', authMiddleware, UserController.updateUser);
 
 userRouter.delete('/:id', authMiddleware, (req, res) => {
     res.send(`Delete user with ID: ${req.params.id}`);
