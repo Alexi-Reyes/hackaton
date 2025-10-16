@@ -1,7 +1,12 @@
 import { Router } from 'express';
 import UserController from '../controllers/user.controller.js';
+import authMiddleware from '../middlewares/auth.middleware.js';
 
 const userRouter = Router();
+
+userRouter.post('/login', UserController.loginUser);
+userRouter.post('/logout', UserController.logoutUser);
+userRouter.get('/profile', authMiddleware, UserController.getUserProfile);
 
 userRouter.get('/', UserController.getUsers);
 
@@ -9,11 +14,11 @@ userRouter.get('/:id', UserController.getUserById);
 
 userRouter.post('/', UserController.createUser);
 
-userRouter.put('/:id', (req, res) => {
+userRouter.put('/:id', authMiddleware, (req, res) => {
     res.send(`Update user with ID: ${req.params.id}`);
 });
 
-userRouter.delete('/:id', (req, res) => {
+userRouter.delete('/:id', authMiddleware, (req, res) => {
     res.send(`Delete user with ID: ${req.params.id}`);
 });
 

@@ -61,6 +61,64 @@ class UserController {
             return res.status(500).send('Server error');
         }
     }
+
+    async loginUser(req, res) {
+        try {
+            const { email, password } = req.body;
+
+            if (!email || !password) {
+                return res.status(400).json({ msg: 'Missing required fields' });
+            }
+
+            const user = await User.findOne({ email }).select(password);
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (!user || !isMatch) {
+                return res.status(400).json({ msg: 'Invalid credentials' });
+            }
+
+            req.session.userId = user._id;
+            res.cookie('sessionId', user._id.toString(), {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                maxAge: 1000 * 60 * 60 * 24
+            });
+
+            return res.status(200).json({ msg: 'Logged in successfully', user: { id: user._id, username: user.username, email: user.email } });
+
+        } catch (err) {
+            console.error(err.message);
+            return res.status(500).send('Server error');
+        }
+    }
+
+    async logoutUser(req, res) {
+        try {
+            req.session.destroy(err => {
+                if (err) {
+                    console.error(err.message);
+                    return res.status(500).send('Could not log out');
+                }
+                res.clearCookie('sessionId');
+                return res.status(200).json({ msg: 'Logged out successfully' });
+            });
+        } catch (err) {
+            console.error(err.message);
+            return res.status(500).send('Server error');
+        }
+    }
+
+    async getUserProfile(req, res) {
+        try {
+            const user = await User.findById(req.user.id).select('-password');
+            if (!user) {
+                return res.status(404).json({ msg: 'User not found' });
+            }
+            return res.status(200).json(user);
+        } catch (err) {
+            console.error(err.message);
+            return res.status(500).send('Server error');
+        }
+    }
 }
 
 export default new UserController();

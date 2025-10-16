@@ -1,6 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import session from 'express-session';
 import Database from './src/db.js';
 import userRouter from './src/routes/user.route.js';
 import postRouter from './src/routes/post.route.js';
@@ -13,6 +15,13 @@ const app = express();
 // middlewares
 app.use(express.json());
 app.use(cors());
+app.use(cookieParser());
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: process.env.NODE_ENV === 'production' && process.env.HTTPS === 'true' }
+}));
 
 Database.connect();
 
