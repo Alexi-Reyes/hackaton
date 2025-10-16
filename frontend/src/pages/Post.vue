@@ -1,1 +1,10 @@
-<template><h1>Hello depuis Post</h1></template>
+<template>
+<Post />
+</template>
+<script setup>
+import Post from '../components/Post.vue'
+</script>
+<style scoped>
+
+</style>
+

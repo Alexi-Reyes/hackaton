@@ -6,13 +6,18 @@
 }
 
 :root {
-  --bg-global: #f9f9f9;    
-  --navbar-bg: #1c1c1c;      
-  --text-main: #e0e0e0;      
-  --text-hover: #ffffff;     
-  --border-accent: #c0c0c0;
-
-
+  --bg-global: #f9f9f9;         
+  --navbar-bg: #1c1c1c;         
+  --text-main: #e0e0e0;         
+  --text-hover: #ffffff;        
+  --border-accent: #c0c0c0;   
+  --border-accent-black: #333333;
+  --input-bg: #2c2c2c;          
+  --button-bg: #000000;        
+  --button-text-white: #ffffff;       
+  --button-text-black: #333333;
+  --button-hover-bg-black: #333333;   
+  --button-hover-bg-white: #ffffff;
 }
 
 body {
