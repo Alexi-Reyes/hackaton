@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Heart, MessageCircleMore } from 'lucide-vue-next'
+import { Heart, MessageCircleMore, SquarePen  } from 'lucide-vue-next'
 
 const posts = ref([])
 const loading = ref(true)
@@ -8,6 +8,8 @@ const error = ref(null)
 const user = ref(null)
 const selectedPost = ref(null)
 const newComment = ref('')
+const editingPostId = ref(null)
+const editContent = ref('')
 
 onMounted(async () => {
   await getCurrentUser()
@@ -131,13 +133,40 @@ const addComment = async (post) => {
     }
 
     post.comments.unshift(normalizedComment)
-
     newComment.value = ''
   } catch (err) {
-    console.error('Erreur lors de l’ajout du commentaire:', err)
+    console.error("Erreur lors de l'ajout du commentaire:", err)
   }
 }
 
+const startEdit = (post) => {
+  editingPostId.value = post._id
+  editContent.value = post.content
+}
+
+const saveEdit = async (post) => {
+  if (!editContent.value.trim()) return
+
+  try {
+    const res = await fetch(`${import.meta.env.BACKEND_URL}/posts/${post._id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: editContent.value }),
+    })
+    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+
+    const updated = await res.json()
+    post.content = updated.post.content
+    editingPostId.value = null
+  } catch (err) {
+    console.error("Erreur lors de la modification du post:", err)
+  }
+}
+
+const cancelEdit = () => {
+  editingPostId.value = null
+}
 
 const getAvatar = (userData) => {
   if (!userData) return defaultAvatar('U')
@@ -156,7 +185,7 @@ const defaultAvatar = (letter) => {
 
 <template>
   <div class="home">
-    <h1>Fil d’actualité</h1>
+    <h1>Fil d'actualité</h1>
 
     <div v-if="loading" class="status">Chargement des posts...</div>
     <div v-else-if="error" class="status error">{{ error }}</div>
@@ -176,7 +205,17 @@ const defaultAvatar = (letter) => {
         </div>
 
         <div class="post-content">
-          {{ post.content }}
+          <div v-if="editingPostId === post._id">
+            <textarea v-model="editContent" rows="3" class="edit-textarea"></textarea>
+            <div class="edit-buttons">
+              <button class="btn-edit" @click="saveEdit(post)">Enregistrer</button>
+              <button class="btn-edit" @click="cancelEdit">Annuler</button>
+            </div>
+          </div>
+
+          <div v-else>
+            {{ post.content }}
+          </div>
         </div>
 
         <div class="post-footer">
@@ -191,7 +230,11 @@ const defaultAvatar = (letter) => {
             </button>
 
             <button class="comment-toggle" @click="toggleComments(post._id)">
-              <MessageCircleMore  />
+              <MessageCircleMore />
+            </button>
+
+            <button v-if="user && post.userId._id === user._id" @click="startEdit(post)">
+              <SquarePen  /> 
             </button>
           </div>
         </div>
@@ -203,26 +246,18 @@ const defaultAvatar = (letter) => {
                 <img :src="getAvatar(comment.userId)" class="avatar" />
                 <span class="comment-username">{{ comment.userId?.username || 'Utilisateur inconnu' }}</span>
               </div>
-
-              <div class="comment-content">
-                {{ comment.content }}
-              </div>
-
-              <div class="comment-date">
-                {{ new Date(comment.createdAt).toLocaleString() }}
-              </div>
+              <div class="comment-content">{{ comment.content }}</div>
+              <div class="comment-date">{{ new Date(comment.createdAt).toLocaleString() }}</div>
             </div>
           </div>
-
           <div v-else class="no-comments">Aucun commentaire pour le moment.</div>
-
           <div class="add-comment">
             <input
               v-model="newComment"
               placeholder="Écrire un commentaire..."
               @keyup.enter="addComment(post)"
             />
-            <button @click="addComment(post)">Envoyer</button>
+            <button class="btn-edit" @click="addComment(post)">Envoyer</button>
           </div>
         </div>
       </div>
@@ -317,7 +352,7 @@ h1 {
   gap: 10px;
 }
 
-.like-button, .comment-toggle {
+.like-button, .comment-toggle, .left-actions button {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -396,17 +431,36 @@ h1 {
   background-color: var(--bg-global);
 }
 
-.add-comment button {
-  padding: 0.4rem 0.8rem;
-  background-color: var(--border-accent);
-  color: white;
-  border: none;
+.edit-textarea {
+  width: 100%;
+  padding: 0.5rem;
   border-radius: 6px;
-  cursor: pointer;
-  transition: 0.3s;
+  border: 1px solid var(--border-accent);
+  margin-bottom: 0.5rem;
+  background-color: var(--bg-global);
+  resize: none;
 }
 
-.add-comment button:hover {
-  background-color: var(--text-hover);
+.edit-buttons {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.btn-edit {
+  background-color: transparent;
+  color: var(--border-accent);
+  border: 1px solid var(--border-accent);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.25s ease;
+}
+
+.btn-edit:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  transform: translateY(-1px);
 }
 </style>
