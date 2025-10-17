@@ -27,7 +27,7 @@ app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { sameSite: "none", secure: process.env.NODE_ENV === 'production' && process.env.HTTPS === 'true' }
+    cookie: { sameSite: "none", secure: true, httpOnly: true }
 }));
 
 Database.connect();
