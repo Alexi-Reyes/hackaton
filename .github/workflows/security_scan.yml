@@ -18,7 +18,7 @@ jobs:
         uses: zricethezav/gitleaks-action@v2 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+
 npm_vulnerability_scan:
     name: NPM Vulnerability Scan
     runs-on: ubuntu-latest
@@ -56,7 +56,7 @@ npm_vulnerability_scan:
         run: |
           cd ${{ matrix.project_dir }}
           
-          OUTPUT=$(depcheck --json)
+          OUTPUT=$(depcheck --json || true)
           
           if [ "$(echo "$OUTPUT" | jq -e '.dependencies | length' 2>/dev/null)" -gt 0 ]; then
             UNSUSED_LIST=$(echo "$OUTPUT" | jq -r '.dependencies[]')
