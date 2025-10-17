@@ -48,11 +48,12 @@ jobs:
       - name: Check for Unused NPM Packages in ${{ matrix.project_dir }} (Depcheck)
         shell: bash
         run: |
-          npm install -g depcheck jq
+          sudo apt-get update && sudo apt-get install -y jq
+          npm install -g depcheck
           
           OUTPUT=$(cd ${{ matrix.project_dir }} && depcheck --json)
-  
-          if [ "$(echo "$OUTPUT" | jq '.dependencies | length')" -gt 0 ]; then
+          
+          if [ "$(echo "$OUTPUT" | jq -e '.dependencies | length' 2>/dev/null)" -gt 0 ]; then
             UNSUSED_LIST=$(echo "$OUTPUT" | jq -r '.dependencies[]')
             
             echo "::warning title=Unused NPM Dependencies in ${{ matrix.project_dir }}::Found the following unused dependencies: $UNSUSED_LIST"
