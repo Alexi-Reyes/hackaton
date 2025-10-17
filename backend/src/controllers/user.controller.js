@@ -121,6 +121,7 @@ class UserController {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
                 path: "/",
+                domain: "*",
                 maxAge: 1000 * 60 * 60 * 24,
             });
 
