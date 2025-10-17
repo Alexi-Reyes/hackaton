@@ -165,6 +165,32 @@ const isAuthor = (post) => {
   return user.value && post.userId?._id === user.value._id
 }
 
+const isCommentAuthor = (comment) => {
+  return user.value && comment.userId?._id === user.value._id
+}
+
+const deleteComment = async (post, commentId) => {
+  if (!confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?')) return
+
+  try {
+    const res = await fetch(`${import.meta.env.BACKEND_URL}/comments/${commentId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    })
+
+    if (!res.ok) {
+      const error = await res.json()
+      throw new Error(error.msg || `Erreur HTTP ${res.status}`)
+    }
+
+    // Retirer le commentaire de la liste
+    post.comments = post.comments.filter(comment => comment._id !== commentId)
+  } catch (err) {
+    console.error('Erreur lors de la suppression du commentaire:', err)
+    alert(err.message || 'Erreur lors de la suppression du commentaire')
+  }
+}
+
 const getAvatar = (userData) => {
   if (!userData) return defaultAvatar('U')
   if (userData.profilePicture) return userData.profilePicture
@@ -247,8 +273,13 @@ const formatDate = (dateString) => {
           <div v-if="post.comments && post.comments.length > 0" class="comments-list">
             <div v-for="comment in post.comments" :key="comment._id" class="comment">
               <div class="comment-header">
-                <img :src="getAvatar(comment.userId)" class="avatar" />
-                <span class="comment-username">{{ comment.userId?.username || 'Utilisateur inconnu' }}</span>
+                <div class="comment-user-info">
+                  <img :src="getAvatar(comment.userId)" class="avatar" />
+                  <span class="comment-username">{{ comment.userId?.username || 'Utilisateur inconnu' }}</span>
+                </div>
+                <button v-if="isCommentAuthor(comment)" class="delete-comment-button" @click="deleteComment(post, comment._id)">
+                  <X />
+                </button>
               </div>
 
               <div class="comment-content">
@@ -438,6 +469,31 @@ h1 {
   height: 20px;
 }
 
+.delete-comment-button {
+  background: none;
+  border: none;
+  color: var(--border-accent);
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+}
+
+.delete-comment-button:hover {
+  background-color: rgba(255, 77, 87, 0.1);
+  color: #ff4757;
+  opacity: 1;
+}
+
+.delete-comment-button svg {
+  width: 16px;
+  height: 16px;
+}
+
 .comments-section {
   margin-top: 1rem;
   padding-top: 1rem;
@@ -466,8 +522,15 @@ h1 {
 .comment-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.4rem;
+}
+
+.comment-user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .comment .avatar {
