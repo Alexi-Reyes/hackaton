@@ -79,11 +79,18 @@ class PostController {
 
     async deletePost(req, res) {
         try {
-            const deletedPost = await Post.findByIdAndDelete(req.params.id);
+            const post = await Post.findById(req.params.id);
 
-            if (!deletedPost) {
+            if (!post) {
                 return res.status(404).json({ msg: 'Post not found' });
             }
+
+            // Vérifier que l'utilisateur connecté est bien l'auteur du post
+            if (post.userId.toString() !== req.user._id.toString()) {
+                return res.status(403).json({ msg: 'Vous n\'êtes pas autorisé à supprimer ce post' });
+            }
+
+            await Post.findByIdAndDelete(req.params.id);
 
             return res.status(200).json({ msg: 'Post deleted successfully' });
         } catch (err) {

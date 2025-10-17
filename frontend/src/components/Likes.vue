@@ -1,18 +1,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Heart, MessageCircleMore, Trash2 } from 'lucide-vue-next'
+import { Heart, MessageCircleMore } from 'lucide-vue-next'
 
-const posts = ref([])
+const likedPosts = ref([])
 const loading = ref(true)
 const error = ref(null)
 const user = ref(null)
 const selectedPost = ref(null)
 const newComment = ref('')
-
-onMounted(async () => {
-  await getCurrentUser()
-  await loadPosts()
-})
 
 const getCurrentUser = async () => {
   try {
@@ -23,37 +18,35 @@ const getCurrentUser = async () => {
   }
 }
 
-const loadPosts = async () => {
+const fetchLikedPosts = async () => {
   loading.value = true
   error.value = null
-  try {
-    const res = await fetch(`${import.meta.env.BACKEND_URL}/posts`, { credentials: 'include' })
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
-    const data = await res.json()
-    posts.value = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
-    for (const post of posts.value) {
-      await loadLikes(post)
+  try {
+    const res = await fetch(`${import.meta.env.BACKEND_URL}/likes/user/posts`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    })
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        throw new Error("Vous devez être connecté pour voir vos posts likés.")
+      }
+      throw new Error(`Erreur HTTP ${res.status}`)
+    }
+
+    const data = await res.json()
+    likedPosts.value = data.posts || []
+
+    for (const post of likedPosts.value) {
       await loadComments(post)
     }
   } catch (err) {
-    console.error('Erreur lors du chargement des posts:', err)
+    console.error('Erreur lors de la récupération des posts likés:', err)
     error.value = err.message
   } finally {
     loading.value = false
-  }
-}
-
-const loadLikes = async (post) => {
-  try {
-    const resLikes = await fetch(`${import.meta.env.BACKEND_URL}/likes/post/${post._id}`, { credentials: 'include' })
-    if (resLikes.ok) {
-      const likes = await resLikes.json()
-      post.likesCount = likes.length
-      post.userLiked = user.value ? likes.some(like => like.userId._id === user.value._id) : false
-    }
-  } catch (err) {
-    console.error('Erreur lors du chargement des likes:', err)
   }
 }
 
@@ -71,28 +64,26 @@ const loadComments = async (post) => {
   }
 }
 
-const toggleLike = async (post) => {
-  if (!user.value) {
-    alert('Vous devez être connecté pour liker un post.')
-    return
-  }
-
-  const alreadyLiked = post.userLiked
+const unlikePost = async (postId) => {
+  if (!confirm('Retirer ce post de vos likes ?')) return
 
   try {
     const res = await fetch(`${import.meta.env.BACKEND_URL}/likes`, {
-      method: alreadyLiked ? 'DELETE' : 'POST',
-      credentials: 'include',
+      method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ postId: post._id }) // userId récupéré depuis la session côté backend
+      credentials: 'include',
+      body: JSON.stringify({ postId }) // userId récupéré depuis la session côté backend
     })
 
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    if (!res.ok) {
+      throw new Error(`Erreur HTTP ${res.status}`)
+    }
 
-    post.userLiked = !alreadyLiked
-    post.likesCount += alreadyLiked ? -1 : 1
+    // Recharger la liste des posts likés
+    await fetchLikedPosts()
   } catch (err) {
-    console.error('Erreur lors du like:', err)
+    console.error('Erreur lors du unlike:', err)
+    alert('Erreur lors du retrait du like')
   }
 }
 
@@ -134,35 +125,8 @@ const addComment = async (post) => {
 
     newComment.value = ''
   } catch (err) {
-    console.error('Erreur lors de l’ajout du commentaire:', err)
+    console.error('Erreur lors de l\'ajout du commentaire:', err)
   }
-}
-
-
-const deletePost = async (postId) => {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer ce post ?')) return
-
-  try {
-    const res = await fetch(`${import.meta.env.BACKEND_URL}/posts/${postId}`, {
-      method: 'DELETE',
-      credentials: 'include'
-    })
-
-    if (!res.ok) {
-      const error = await res.json()
-      throw new Error(error.msg || `Erreur HTTP ${res.status}`)
-    }
-
-    // Retirer le post de la liste
-    posts.value = posts.value.filter(post => post._id !== postId)
-  } catch (err) {
-    console.error('Erreur lors de la suppression:', err)
-    alert(err.message || 'Erreur lors de la suppression du post')
-  }
-}
-
-const isAuthor = (post) => {
-  return user.value && post.userId?._id === user.value._id
 }
 
 const getAvatar = (userData) => {
@@ -194,21 +158,26 @@ const formatDate = (dateString) => {
   if (days < 7) return `Il y a ${days}j`
   return date.toLocaleDateString('fr-FR')
 }
+
+onMounted(async () => {
+  await getCurrentUser()
+  await fetchLikedPosts()
+})
 </script>
 
 <template>
   <div class="home">
-    <h1>Fil d’actualité</h1>
+    <h1>Posts Likés</h1>
 
-    <div v-if="loading" class="status">Chargement des posts...</div>
+    <div v-if="loading" class="status">Chargement...</div>
     <div v-else-if="error" class="status error">{{ error }}</div>
 
     <div v-else class="posts">
-      <div v-if="posts.length === 0" class="no-posts">
-        Aucun post pour le moment.
+      <div v-if="likedPosts.length === 0" class="no-posts">
+        Aucun post liké pour le moment.
       </div>
 
-      <div v-for="post in posts" :key="post._id" class="post">
+      <div v-for="post in likedPosts" :key="post._id" class="post">
         <div class="post-header">
           <div class="user-info">
             <img :src="getAvatar(post.userId)" class="avatar" />
@@ -226,16 +195,15 @@ const formatDate = (dateString) => {
         <div class="post-footer">
           <div class="left-actions">
             <button
-              class="like-button"
-              :class="{ liked: post.userLiked }"
-              @click="toggleLike(post)"
+              class="like-button liked"
+              @click="unlikePost(post._id)"
             >
-              <Heart :class="{ liked: post.userLiked }" />
+              <Heart class="liked" />
               <span>{{ post.likesCount || 0 }}</span>
             </button>
 
             <button class="comment-toggle" @click="toggleComments(post._id)">
-              <MessageCircleMore  />
+              <MessageCircleMore />
             </button>
           </div>
         </div>
