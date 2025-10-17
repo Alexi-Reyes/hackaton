@@ -175,7 +175,6 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString('fr-FR')
 }
 
-// Charger l'utilisateur au montage
 getCurrentUser()
 </script>
 
