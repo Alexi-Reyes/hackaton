@@ -1,11 +1,12 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 const user = ref(null)
 const loading = ref(true)
 const error = ref(null)
 const editMode = ref(false)
-const form = ref({ username: '', email: '' })
+const form = ref({ username: '', email: '', profilePicture: '' })
+const avatarFile = ref(null)
 
 onMounted(async () => {
   await loadProfile()
@@ -22,6 +23,7 @@ const loadProfile = async () => {
     user.value = data
     form.value.username = data.username
     form.value.email = data.email
+    form.value.profilePicture = data.profilePicture || ''
   } catch (err) {
     console.error(err)
     error.value = err.message
@@ -34,18 +36,50 @@ const toggleEdit = () => {
   editMode.value = !editMode.value
 }
 
+const handleFileUpload = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    avatarFile.value = file
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      form.value.profilePicture = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const displayAvatar = computed(() => {
+  if (form.value.profilePicture) return form.value.profilePicture
+  if (form.value.username) {
+    const letter = form.value.username.charAt(0).toUpperCase()
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+      <rect width="100" height="100" fill="#ccc" />
+      <text x="50%" y="50%" font-size="50" text-anchor="middle" dominant-baseline="central" fill="#000">${letter}</text>
+    </svg>`
+    return `data:image/svg+xml;base64,${btoa(svg)}`
+  }
+  return ''
+})
+
 const saveProfile = async () => {
   try {
+    const payload = {
+      username: form.value.username,
+      email: form.value.email,
+      profilePicture: form.value.profilePicture
+    }
+
     const res = await fetch(`${import.meta.env.BACKEND_URL}/users/${user.value._id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(form.value),
+      body: JSON.stringify(payload),
     })
     if (!res.ok) throw new Error('Erreur lors de la mise à jour du profil')
     const data = await res.json()
     user.value = data.user
     editMode.value = false
+    avatarFile.value = null
   } catch (err) {
     console.error(err)
     error.value = err.message
@@ -66,15 +100,26 @@ const saveProfile = async () => {
     <div v-else-if="error" class="status error">{{ error }}</div>
 
     <div v-else class="info">
+      <div class="avatar-container">
+        <img
+          :src="displayAvatar"
+          alt="Avatar"
+          class="avatar"
+        />
+        <div v-if="editMode" class="upload-group">
+          <input type="file" accept="image/*" @change="handleFileUpload" />
+        </div>
+      </div>
+
       <div class="field-group">
         <label class="field-label">Nom d'utilisateur</label>
         <span v-if="!editMode" class="field-value">{{ user.username }}</span>
         <input v-else v-model="form.username" type="text" class="field-input" />
       </div>
+
       <div class="field-group">
         <label class="field-label">Email</label>
         <span v-if="!editMode" class="field-value">{{ user.email }}</span>
-        <input v-else v-model="form.email" type="email" class="field-input" />
       </div>
     </div>
   </div>
@@ -131,6 +176,25 @@ h1 {
   gap: 1.5rem;
 }
 
+.avatar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-accent);
+}
+
+.upload-group {
+  margin-top: 0.5rem;
+}
+
 .field-group {
   display: flex;
   flex-direction: column;
@@ -154,11 +218,6 @@ h1 {
   transition: all 0.3s ease;
 }
 
-.field-value:hover {
-  background: linear-gradient(90deg, rgba(201,166,107,0.2) 0%, transparent 100%);
-  transform: translateX(3px);
-}
-
 .field-input {
   padding: 0.8rem 1rem;
   background: rgba(201,166,107,0.05);
@@ -175,7 +234,5 @@ h1 {
   border-color: var(--button-bg);
   background: rgba(201,166,107,0.15);
   box-shadow: 0 0 0 3px rgba(201,166,107,0.1);
-  transform: translateY(-2px);
 }
-
 </style>

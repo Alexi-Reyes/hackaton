@@ -1,0 +1,64 @@
+name: Security Scan
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  secret_scan:
+    name: Git Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Gitleaks Scan
+        uses: zricethezav/gitleaks-action@v2 
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  npm_vulnerability_scan:
+    name: NPM Vulnerability Scan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project_dir: [ 'frontend', 'backend' ]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.0.2'
+      
+      - name: Install System Dependencies (jq)
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Install Depcheck Utility
+        run: npm install -g depcheck
+      
+      - name: Install Project Dependencies in ${{ matrix.project_dir }}
+        run: |
+          cd ${{ matrix.project_dir }}
+          npm ci
+        
+      - name: Run NPM Audit in ${{ matrix.project_dir }}
+        run: |
+          cd ${{ matrix.project_dir }}
+          npm audit --audit-level=moderate
+
+      - name: Check for Unused NPM Packages in ${{ matrix.project_dir }} (Depcheck)
+        shell: bash
+        run: |
+          cd ${{ matrix.project_dir }}
+          
+          OUTPUT=$(depcheck --json || true)
+          
+          if [ "$(echo "$OUTPUT" | jq -e '.dependencies | length' 2>/dev/null)" -gt 0 ]; then
+            UNSUSED_LIST=$(echo "$OUTPUT" | jq -r '.dependencies[]')
+            
+            echo "::warning title=Unused NPM Dependencies in ${{ matrix.project_dir }}::Found the following unused dependencies: $UNSUSED_LIST"
+          fi

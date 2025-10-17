@@ -1,30 +1,28 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Heart } from 'lucide-vue-next'
+import { Heart, MessageCircleMore } from 'lucide-vue-next'
 
 const posts = ref([])
 const loading = ref(true)
 const error = ref(null)
 const user = ref(null)
+const selectedPost = ref(null)
+const newComment = ref('')
 
 onMounted(async () => {
   await getCurrentUser()
   await loadPosts()
 })
 
-// 🔹 Récupérer l'utilisateur connecté
 const getCurrentUser = async () => {
   try {
     const res = await fetch(`${import.meta.env.BACKEND_URL}/users/profile`, { credentials: 'include' })
-    if (res.ok) {
-      user.value = await res.json()
-    }
+    if (res.ok) user.value = await res.json()
   } catch (err) {
     console.error('Erreur utilisateur:', err)
   }
 }
 
-// 🔹 Charger les posts
 const loadPosts = async () => {
   loading.value = true
   error.value = null
@@ -34,22 +32,10 @@ const loadPosts = async () => {
     const data = await res.json()
     posts.value = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
-    // 🔹 Vérifie si l'utilisateur a déjà liké chaque post
-    if (user.value) {
-      for (const post of posts.value) {
-        const resLikes = await fetch(`${import.meta.env.BACKEND_URL}/likes/post/${post._id}`, {
-          credentials: 'include'
-        })
-        if (resLikes.ok) {
-          const likes = await resLikes.json()
-          post.userLiked = likes.some(like => like.userId._id === user.value._id)
-
-        } else {
-          post.userLiked = false
-        }
-      }
+    for (const post of posts.value) {
+      await loadLikes(post)
+      await loadComments(post)
     }
-
   } catch (err) {
     console.error('Erreur lors du chargement des posts:', err)
     error.value = err.message
@@ -58,8 +44,33 @@ const loadPosts = async () => {
   }
 }
 
+const loadLikes = async (post) => {
+  try {
+    const resLikes = await fetch(`${import.meta.env.BACKEND_URL}/likes/post/${post._id}`, { credentials: 'include' })
+    if (resLikes.ok) {
+      const likes = await resLikes.json()
+      post.likesCount = likes.length
+      post.userLiked = user.value ? likes.some(like => like.userId._id === user.value._id) : false
+    }
+  } catch (err) {
+    console.error('Erreur lors du chargement des likes:', err)
+  }
+}
 
-// 🔹 Liker ou unliker un post
+const loadComments = async (post) => {
+  try {
+    const resComments = await fetch(`${import.meta.env.BACKEND_URL}/comments/post/${post._id}`, { credentials: 'include' })
+    if (resComments.ok) {
+      post.comments = await resComments.json()
+    } else {
+      post.comments = []
+    }
+  } catch (err) {
+    console.error('Erreur lors du chargement des commentaires:', err)
+    post.comments = []
+  }
+}
+
 const toggleLike = async (post) => {
   if (!user.value) {
     alert('Vous devez être connecté pour liker un post.')
@@ -84,6 +95,63 @@ const toggleLike = async (post) => {
     console.error('Erreur lors du like:', err)
   }
 }
+
+const toggleComments = (postId) => {
+  selectedPost.value = selectedPost.value === postId ? null : postId
+}
+
+const addComment = async (post) => {
+  if (!user.value) {
+    alert('Vous devez être connecté pour commenter.')
+    return
+  }
+
+  if (!newComment.value.trim()) return
+
+  try {
+    const res = await fetch(`${import.meta.env.BACKEND_URL}/comments`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: newComment.value,
+        postId: post._id,
+        userId: user.value._id
+      })
+    })
+
+    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    const createdComment = await res.json()
+
+    const normalizedComment = {
+      _id: createdComment._id,
+      content: createdComment.content || newComment.value,
+      userId: createdComment.userId || user.value,
+      createdAt: createdComment.createdAt || new Date().toISOString()
+    }
+
+    post.comments.unshift(normalizedComment)
+
+    newComment.value = ''
+  } catch (err) {
+    console.error('Erreur lors de l’ajout du commentaire:', err)
+  }
+}
+
+
+const getAvatar = (userData) => {
+  if (!userData) return defaultAvatar('U')
+  if (userData.profilePicture) return userData.profilePicture
+  return defaultAvatar(userData.username?.charAt(0).toUpperCase() || 'U')
+}
+
+const defaultAvatar = (letter) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50">
+    <rect width="50" height="50" fill="#ccc"/>
+    <text x="50%" y="50%" font-size="24" text-anchor="middle" dominant-baseline="central" fill="#000">${letter}</text>
+  </svg>`
+  return `data:image/svg+xml;base64,${btoa(svg)}`
+}
 </script>
 
 <template>
@@ -100,7 +168,10 @@ const toggleLike = async (post) => {
 
       <div v-for="post in posts" :key="post._id" class="post">
         <div class="post-header">
-          <span class="users">{{ post.userId?.username || 'Utilisateur inconnu' }}</span>
+          <div class="user-info">
+            <img :src="getAvatar(post.userId)" class="avatar" />
+            <span class="username">{{ post.userId?.username || 'Utilisateur inconnu' }}</span>
+          </div>
           <span class="date">{{ new Date(post.createdAt).toLocaleString() }}</span>
         </div>
 
@@ -109,14 +180,50 @@ const toggleLike = async (post) => {
         </div>
 
         <div class="post-footer">
-          <button
-            class="like-button"
-            :class="{ liked: post.userLiked }"
-            @click="toggleLike(post)"
-          >
-            <Heart :class="{ liked: post.userLiked }" />
-            <span>{{ post.likesCount || 0 }}</span>
-          </button>
+          <div class="left-actions">
+            <button
+              class="like-button"
+              :class="{ liked: post.userLiked }"
+              @click="toggleLike(post)"
+            >
+              <Heart :class="{ liked: post.userLiked }" />
+              <span>{{ post.likesCount || 0 }}</span>
+            </button>
+
+            <button class="comment-toggle" @click="toggleComments(post._id)">
+              <MessageCircleMore  />
+            </button>
+          </div>
+        </div>
+
+        <div v-if="selectedPost === post._id" class="comments-section">
+          <div v-if="post.comments && post.comments.length > 0" class="comments-list">
+            <div v-for="comment in post.comments" :key="comment._id" class="comment">
+              <div class="comment-header">
+                <img :src="getAvatar(comment.userId)" class="avatar" />
+                <span class="comment-username">{{ comment.userId?.username || 'Utilisateur inconnu' }}</span>
+              </div>
+
+              <div class="comment-content">
+                {{ comment.content }}
+              </div>
+
+              <div class="comment-date">
+                {{ new Date(comment.createdAt).toLocaleString() }}
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="no-comments">Aucun commentaire pour le moment.</div>
+
+          <div class="add-comment">
+            <input
+              v-model="newComment"
+              placeholder="Écrire un commentaire..."
+              @keyup.enter="addComment(post)"
+            />
+            <button @click="addComment(post)">Envoyer</button>
+          </div>
         </div>
       </div>
     </div>
@@ -174,6 +281,24 @@ h1 {
   margin-bottom: 0.5rem;
 }
 
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-accent);
+}
+
+.username {
+  font-weight: bold;
+}
+
 .date {
   font-style: italic;
   color: var(--border-accent);
@@ -186,7 +311,13 @@ h1 {
   margin-top: 0.5rem;
 }
 
-.like-button {
+.left-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.like-button, .comment-toggle {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -202,13 +333,80 @@ h1 {
   color: red;
 }
 
-.like-button svg {
-  transition: fill 0.3s ease, color 0.3s ease;
-}
-
 .like-button.liked svg {
   color: red;
   fill: red;
 }
 
+.comments-section {
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-accent);
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.comment {
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  color: var(--text-main);
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.comment-username {
+  font-weight: bold;
+  color: var(--text-hover);
+}
+
+.comment-content {
+  margin-top: 0.3rem;
+  margin-left: 2.5rem;
+  font-size: 0.95rem;
+}
+
+.comment-date {
+  margin-top: 0.2rem;
+  margin-left: 2.5rem;
+  font-size: 0.8rem;
+  color: var(--border-accent);
+  font-style: italic;
+}
+
+.add-comment {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+.add-comment input {
+  flex: 1;
+  padding: 0.4rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-accent);
+  background-color: var(--bg-global);
+}
+
+.add-comment button {
+  padding: 0.4rem 0.8rem;
+  background-color: var(--border-accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.add-comment button:hover {
+  background-color: var(--text-hover);
+}
 </style>

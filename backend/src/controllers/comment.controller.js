@@ -44,9 +44,9 @@ class CommentController {
 
     async getCommentsByPostId(req, res) {
         try {
-            const comments = await Comment.find({ post_id: req.params.postId })
+            const comments = await Comment.find({ postId: req.params.postId })
                 .populate('userId', 'username profilePicture')
-                .sort({ created_at: -1 });
+                .sort({ createdAt: -1 });
             return res.status(200).json(comments);
         } catch (err) {
             console.error(err.message);
@@ -106,7 +106,8 @@ class CommentController {
                 return res.status(404).json({ msg: 'Comment not found' });
             }
 
-            await Post.findByIdAndUpdate(deletedComment.post_id, { $inc: { comments_count: -1 } });
+            await Post.findByIdAndUpdate(deletedComment.postId, { $inc: { comments_count: -1 } });
+
 
             return res.status(200).json({ msg: 'Comment deleted successfully' });
         } catch (err) {
