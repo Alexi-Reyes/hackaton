@@ -120,7 +120,7 @@ class UserController {
             res.cookie("sessionId", user._id.toString(), {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
-                path: "/",
+                // path: "/",
                 maxAge: 1000 * 60 * 60 * 24,
             });
 
