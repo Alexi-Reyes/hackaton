@@ -57,18 +57,26 @@ class PostController {
             }
 
             const { content } = req.body;
-            const updatedPost = await Post.findByIdAndUpdate(
-                req.params.id,
-                { content },
-                { new: true, runValidators: true }
-            );
+            if (typeof content !== 'string' || content.trim() === '') {
+                return res.status(400).json({ msg: "Le contenu est requis" });
+            }
 
-            if (!updatedPost) {
+            const post = await Post.findById(req.params.id);
+            if (!post) {
                 return res.status(404).json({ msg: 'Post not found' });
             }
 
+            if (!req.user || post.userId.toString() !== req.user._id.toString()) {
+                return res.status(403).json({ msg: 'Forbidden: you can only edit your own posts' });
+            }
+
+            post.content = content;
+            await post.save();
+
+            const updatedPost = await Post.findById(post._id).populate('userId', 'username profilePicture');
+
             return res.status(200).json({ msg: 'Post updated successfully', post: updatedPost });
-        } catch (err) {
+            } catch (err) {
             console.error(err.message);
             if (err.kind === 'ObjectId') {
                 return res.status(400).json({ msg: 'Invalid post ID' });
@@ -76,6 +84,7 @@ class PostController {
             return res.status(500).send('Server error');
         }
     }
+
 
     async deletePost(req, res) {
         try {
