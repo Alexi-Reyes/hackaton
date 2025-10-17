@@ -3,12 +3,24 @@
   "buildCommand": "npm run build",
   "functions": {
     "index.js": {
-      "runtime": "@vercel/node"
+      "runtime": "@vercel/node@2.15.0"
     }
   },
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/users/(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/posts/(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/comments/(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/likes/(.*)",
       "dest": "index.js"
     }
   ]

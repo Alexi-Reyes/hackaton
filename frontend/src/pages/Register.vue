@@ -108,19 +108,15 @@ export default {
       let profilePicture = this.previewImage || this.avatarUrl || null;
 
       try {
-        const response = await axios.post(
-          "http://localhost:3000/users/register",
-          {
-            username: this.username,
-            email: this.email,
-            password: this.password,
-            profilePicture,
-          }
-        );
-
-        console.log("Inscription réussie:", response.data);
-        alert("Inscription réussie ! Vous pouvez maintenant vous connecter.");
-        this.router.push("/login");
+        const response = await axios.post(`${import.meta.env.BACKEND_URL}/users/register`, {
+          username: this.username,
+          email: this.email,
+          password: this.password,
+          profilePicture,
+        });
+        console.log('Inscription réussie:', response.data);
+        alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
+        this.router.push('/login');
       } catch (error) {
         console.error(
           "Erreur lors de l'inscription:",
