@@ -15,6 +15,7 @@ import likeRouter from './src/routes/like.route.js';
 
 dotenv.config();
 const app = express();
+const isProduction = process.env.NODE_ENV === 'production';
 
 // middlewares
 app.use(express.json());
@@ -22,14 +23,16 @@ app.use(cors({
     origin: process.env.FRONTEND_URL,
     credentials: true,
 }));
-app.set("trust proxy", 1)
+app.set("trust proxy", isProduction ? 1 : 0)
 app.use(cookieParser());
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    proxy: true,
-    cookie: { sameSite: "none", secure: true, httpOnly: true }
+    proxy: isProduction,
+    cookie: {
+        sameSite: isProduction ? "none" : "lax", secure: isProduction, httpOnly: true
+    }
 }));
 
 Database.connect();
