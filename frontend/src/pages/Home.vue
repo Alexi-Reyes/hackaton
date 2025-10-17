@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Heart, MessageCircleMore, SquarePen } from 'lucide-vue-next'
+import { Heart, MessageCircleMore } from 'lucide-vue-next'
 
 const posts = ref([])
 const loading = ref(true)
@@ -8,12 +8,6 @@ const error = ref(null)
 const user = ref(null)
 const selectedPost = ref(null)
 const newComment = ref('')
-
-const editingPostId = ref(null)
-const editContent = ref('')
-
-const editingCommentId = ref(null)
-const editCommentContent = ref('')
 
 onMounted(async () => {
   await getCurrentUser()
@@ -127,96 +121,20 @@ const addComment = async (post) => {
     })
 
     if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    const createdComment = await res.json()
 
-    const data = await res.json()
-    const createdComment = data.comment ?? data
+    const normalizedComment = {
+      _id: createdComment._id,
+      content: createdComment.content || newComment.value,
+      userId: createdComment.userId || user.value,
+      createdAt: createdComment.createdAt || new Date().toISOString()
+    }
 
-    post.comments = post.comments || []
-    post.comments.unshift(createdComment)
+    post.comments.unshift(normalizedComment)
 
     newComment.value = ''
   } catch (err) {
-    console.error("Erreur lors de l'ajout du commentaire:", err)
-  }
-}
-
-const startEdit = (post) => {
-  editingPostId.value = post._id
-  editContent.value = post.content
-}
-
-const saveEdit = async (post) => {
-  if (!editContent.value.trim()) return
-
-  try {
-    const res = await fetch(`${import.meta.env.BACKEND_URL}/posts/${post._id}`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: editContent.value }),
-    })
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
-
-    const updated = await res.json()
-    post.content = updated.post.content
-    editingPostId.value = null
-  } catch (err) {
-    console.error("Erreur lors de la modification du post:", err)
-  }
-}
-
-const cancelEdit = () => {
-  editingPostId.value = null
-}
-
-const startEditComment = (comment) => {
-  editingCommentId.value = comment._id
-  editCommentContent.value = comment.content
-}
-
-const saveEditComment = async (post, comment) => {
-  if (!editCommentContent.value.trim()) return
-
-  try {
-    const res = await fetch(`${import.meta.env.BACKEND_URL}/comments/${comment._id}`, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: editCommentContent.value }),
-    })
-
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
-    const data = await res.json()
-
-    const index = post.comments.findIndex(c => c._id === comment._id)
-    if (index !== -1) {
-      post.comments[index].content = data.comment.content
-    }
-
-    editingCommentId.value = null
-  } catch (err) {
-    console.error("Erreur lors de la modification du commentaire:", err)
-  }
-}
-
-const cancelEditComment = () => {
-  editingCommentId.value = null
-}
-
-const deleteComment = async (post, comment) => {
-  if (!confirm('Voulez-vous vraiment supprimer ce commentaire ?')) return
-
-  try {
-    const res = await fetch(`${import.meta.env.BACKEND_URL}/comments/${comment._id}`, {
-      method: 'DELETE',
-      credentials: 'include'
-    })
-
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
-
-    post.comments = post.comments.filter(c => c._id !== comment._id)
-  } catch (err) {
-    console.error('Erreur lors de la suppression du commentaire :', err)
+    console.error('Erreur lors de l’ajout du commentaire:', err)
   }
 }
 
@@ -238,13 +156,15 @@ const defaultAvatar = (letter) => {
 
 <template>
   <div class="home">
-    <h1>Fil d'actualité</h1>
+    <h1>Fil d’actualité</h1>
 
     <div v-if="loading" class="status">Chargement des posts...</div>
     <div v-else-if="error" class="status error">{{ error }}</div>
 
     <div v-else class="posts">
-      <div v-if="posts.length === 0" class="no-posts">Aucun post pour le moment.</div>
+      <div v-if="posts.length === 0" class="no-posts">
+        Aucun post pour le moment.
+      </div>
 
       <div v-for="post in posts" :key="post._id" class="post">
         <div class="post-header">
@@ -256,32 +176,22 @@ const defaultAvatar = (letter) => {
         </div>
 
         <div class="post-content">
-          <div v-if="editingPostId === post._id">
-            <textarea v-model="editContent" rows="3" class="edit-textarea"></textarea>
-            <div class="edit-buttons">
-              <button class="btn-edit" @click="saveEdit(post)">Enregistrer</button>
-              <button class="btn-edit" @click="cancelEdit">Annuler</button>
-            </div>
-          </div>
-
-          <div v-else>
-            {{ post.content }}
-          </div>
+          {{ post.content }}
         </div>
 
         <div class="post-footer">
           <div class="left-actions">
-            <button class="like-button" :class="{ liked: post.userLiked }" @click="toggleLike(post)">
+            <button
+              class="like-button"
+              :class="{ liked: post.userLiked }"
+              @click="toggleLike(post)"
+            >
               <Heart :class="{ liked: post.userLiked }" />
               <span>{{ post.likesCount || 0 }}</span>
             </button>
 
             <button class="comment-toggle" @click="toggleComments(post._id)">
-              <MessageCircleMore />
-            </button>
-
-            <button v-if="user && post.userId._id === user._id" @click="startEdit(post)">
-              <SquarePen /> 
+              <MessageCircleMore  />
             </button>
           </div>
         </div>
@@ -292,32 +202,14 @@ const defaultAvatar = (letter) => {
               <div class="comment-header">
                 <img :src="getAvatar(comment.userId)" class="avatar" />
                 <span class="comment-username">{{ comment.userId?.username || 'Utilisateur inconnu' }}</span>
-                <div v-if="user && comment.userId._id === user._id" class="comment-actions" style="margin-left:auto;">
-                <button
-                  class="btn-edit"
-                  style="padding:0.2rem 0.6rem; font-size:0.8rem;"
-                  @click="startEditComment(comment)"
-                >Modifier</button>
-
-                <button
-                  class="btn-edit"
-                  style="padding:0.2rem 0.6rem; font-size:0.8rem; color:red; border-color:red;"
-                  @click="deleteComment(post, comment)"
-                >Supprimer</button>
               </div>
 
+              <div class="comment-content">
+                {{ comment.content }}
               </div>
 
-              <div v-if="editingCommentId === comment._id" class="edit-comment-area">
-                <textarea v-model="editCommentContent" rows="2" class="edit-textarea"></textarea>
-                <div class="edit-buttons">
-                  <button class="btn-edit" @click="saveEditComment(post, comment)">Enregistrer</button>
-                  <button class="btn-edit" @click="cancelEditComment">Annuler</button>
-                </div>
-              </div>
-              <div v-else>
-                <div class="comment-content">{{ comment.content }}</div>
-                <div class="comment-date">{{ new Date(comment.createdAt).toLocaleString() }}</div>
+              <div class="comment-date">
+                {{ new Date(comment.createdAt).toLocaleString() }}
               </div>
             </div>
           </div>
@@ -330,14 +222,13 @@ const defaultAvatar = (letter) => {
               placeholder="Écrire un commentaire..."
               @keyup.enter="addComment(post)"
             />
-            <button class="btn-edit" @click="addComment(post)">Envoyer</button>
+            <button @click="addComment(post)">Envoyer</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 </template>
-
 
 <style scoped>
 .home {
@@ -426,7 +317,7 @@ h1 {
   gap: 10px;
 }
 
-.like-button, .comment-toggle, .left-actions button {
+.like-button, .comment-toggle {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -505,47 +396,17 @@ h1 {
   background-color: var(--bg-global);
 }
 
-.edit-textarea {
-  width: 100%;
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--border-accent);
-  margin-bottom: 0.5rem;
-  background-color: var(--bg-global);
-  resize: none;
-}
-
-.edit-buttons {
-  display: flex;
-  gap: 0.6rem;
-  margin-top: 0.4rem;
-}
-
-.btn-edit {
-  background-color: transparent;
-  color: var(--border-accent);
-  border: 1px solid var(--border-accent);
+.add-comment button {
   padding: 0.4rem 0.8rem;
+  background-color: var(--border-accent);
+  color: white;
+  border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: bold;
-  transition: all 0.25s ease;
+  transition: 0.3s;
 }
 
-.btn-edit:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--text-main);
-  transform: translateY(-1px);
+.add-comment button:hover {
+  background-color: var(--text-hover);
 }
-
-.comment-actions {
-  display: flex;
-  gap: 0.4rem;
-}
-
-.btn-edit.delete:hover {
-  background-color: rgba(255, 0, 0, 0.1);
-  color: red;
-}
-
 </style>
