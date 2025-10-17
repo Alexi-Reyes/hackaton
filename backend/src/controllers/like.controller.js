@@ -10,7 +10,7 @@ class LikeController {
             }
 
             const { postId } = req.body;
-            const userId = req.user._id; // Récupéré depuis le middleware auth
+            const userId = req.user._id;
 
             if (!postId) {
                 return res.status(400).json({ msg: 'Missing required fields' });
@@ -49,7 +49,7 @@ class LikeController {
             }
 
             const { postId } = req.body;
-            const userId = req.user._id; // Récupéré depuis le middleware auth
+            const userId = req.user._id;
 
             if (!postId) {
                 return res.status(400).json({ msg: 'Missing required fields' });
@@ -83,10 +83,8 @@ class LikeController {
 
     async getLikedPostsByUser(req, res) {
         try {
-            // Récupérer l'utilisateur connecté depuis le middleware auth
             const userId = req.user._id;
 
-            // Trouver tous les likes de cet utilisateur
             const likes = await Like.find({ userId })
                 .populate({
                     path: 'postId',
@@ -97,10 +95,8 @@ class LikeController {
                 })
                 .sort({ createdAt: -1 });
 
-            // Filtrer les likes dont le post n'existe plus (null)
             const validLikes = likes.filter(like => like.postId !== null);
 
-            // Extraire les posts des likes
             const posts = validLikes.map(like => like.postId);
 
             return res.status(200).json({ posts });
