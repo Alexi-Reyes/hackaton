@@ -117,9 +117,11 @@ class UserController {
             }
 
             req.session.userId = user._id;
+            console.log(user)
             res.cookie("sessionId", user._id.toString(), {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
+                secure: true,
+                sameSite: "none",
                 path: "/",
                 maxAge: 1000 * 60 * 60 * 24,
             });

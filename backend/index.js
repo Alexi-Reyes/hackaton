@@ -19,14 +19,17 @@ const app = express();
 // middlewares
 app.use(express.json());
 app.use(cors({
-    origin: "*",
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
 }));
+app.set("trust proxy", 1)
 app.use(cookieParser());
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' && process.env.HTTPS === 'true' }
+    proxy: true,
+    cookie: { sameSite: "none", secure: true, httpOnly: true }
 }));
 
 Database.connect();
