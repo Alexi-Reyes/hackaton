@@ -33,21 +33,14 @@ class CommentController {
 
             await newComment.save();
 
-            const populatedComment = await newComment.populate('userId', 'username profilePicture');
-
             await Post.findByIdAndUpdate(postId, { $inc: { comments_count: 1 } });
 
-            return res.status(201).json({
-                msg: 'Comment created successfully',
-                comment: populatedComment
-            });
-
+            return res.status(201).json({ msg: 'Comment created successfully', comment: newComment });
         } catch (err) {
             console.error(err.message);
             return res.status(500).send('Server error');
         }
     }
-
 
     async getCommentsByPostId(req, res) {
         try {
