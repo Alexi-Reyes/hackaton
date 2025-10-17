@@ -117,6 +117,7 @@ class UserController {
             }
 
             req.session.userId = user._id;
+            console.log(user)
             res.cookie("sessionId", user._id.toString(), {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
