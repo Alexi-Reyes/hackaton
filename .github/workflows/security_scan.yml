@@ -18,8 +18,8 @@ jobs:
         uses: zricethezav/gitleaks-action@v2 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  npm_vulnerability_scan:
+          
+npm_vulnerability_scan:
     name: NPM Vulnerability Scan
     runs-on: ubuntu-latest
     strategy:
@@ -35,10 +35,16 @@ jobs:
         with:
           node-version: '24.0.2'
       
-      - name: Install Dependencies in ${{ matrix.project_dir }}
+      - name: Install System Dependencies (jq)
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Install Depcheck Utility
+        run: npm install -g depcheck
+      
+      - name: Install Project Dependencies in ${{ matrix.project_dir }}
         run: |
           cd ${{ matrix.project_dir }}
-          npm install --no-package-lock
+          npm ci
         
       - name: Run NPM Audit in ${{ matrix.project_dir }}
         run: |
@@ -48,10 +54,9 @@ jobs:
       - name: Check for Unused NPM Packages in ${{ matrix.project_dir }} (Depcheck)
         shell: bash
         run: |
-          sudo apt-get update && sudo apt-get install -y jq
-          npm install -g depcheck
+          cd ${{ matrix.project_dir }}
           
-          OUTPUT=$(cd ${{ matrix.project_dir }} && depcheck --json)
+          OUTPUT=$(depcheck --json)
           
           if [ "$(echo "$OUTPUT" | jq -e '.dependencies | length' 2>/dev/null)" -gt 0 ]; then
             UNSUSED_LIST=$(echo "$OUTPUT" | jq -r '.dependencies[]')
