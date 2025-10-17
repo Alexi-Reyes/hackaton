@@ -1,7 +1,6 @@
 import User from '../models/user.model.js';
 
 const authMiddleware = async (req, res, next) => {
-    console.log(req.session)
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ message: 'Unauthorized: No active session' });
     }
