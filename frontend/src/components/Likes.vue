@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Heart, MessageCircleMore } from 'lucide-vue-next'
+import { Heart, MessageCircleMore, X } from 'lucide-vue-next'
 
 const likedPosts = ref([])
 const loading = ref(true)
@@ -159,6 +159,32 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString('fr-FR')
 }
 
+const deletePost = async (postId) => {
+  if (!confirm('Êtes-vous sûr de vouloir supprimer ce post ?')) return
+
+  try {
+    const res = await fetch(`${import.meta.env.BACKEND_URL}/posts/${postId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    })
+
+    if (!res.ok) {
+      const error = await res.json()
+      throw new Error(error.msg || `Erreur HTTP ${res.status}`)
+    }
+
+    // Retirer le post de la liste
+    likedPosts.value = likedPosts.value.filter(post => post._id !== postId)
+  } catch (err) {
+    console.error('Erreur lors de la suppression:', err)
+    alert(err.message || 'Erreur lors de la suppression du post')
+  }
+}
+
+const isAuthor = (post) => {
+  return user.value && post.userId?._id === user.value._id
+}
+
 onMounted(async () => {
   await getCurrentUser()
   await fetchLikedPosts()
@@ -186,6 +212,9 @@ onMounted(async () => {
               <span class="date">{{ formatDate(post.createdAt) }}</span>
             </div>
           </div>
+          <button v-if="isAuthor(post)" class="delete-button" @click="deletePost(post._id)">
+            <X />
+          </button>
         </div>
 
         <div class="post-content">
@@ -378,6 +407,29 @@ h1 {
 
 .comment-toggle:hover {
   color: var(--text-hover);
+}
+
+.delete-button {
+  background: none;
+  border: none;
+  color: var(--border-accent);
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-button:hover {
+  background-color: rgba(255, 77, 87, 0.1);
+  color: #ff4757;
+}
+
+.delete-button svg {
+  width: 20px;
+  height: 20px;
 }
 
 .comments-section {
