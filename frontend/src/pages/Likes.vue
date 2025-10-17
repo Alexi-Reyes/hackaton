@@ -1,1 +1,12 @@
-<template><h1>Hello depuis Likes</h1></template>
+<template>
+
+    <Likes />
+
+</template>
+<script setup>
+import Likes from '../components/Likes.vue'
+</script>
+<style scoped>
+
+</style>
+
