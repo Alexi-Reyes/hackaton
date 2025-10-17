@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Heart, MessageCircleMore, SquarePen  } from 'lucide-vue-next'
+import { Heart, MessageCircleMore, SquarePen } from 'lucide-vue-next'
 
 const posts = ref([])
 const loading = ref(true)
@@ -8,8 +8,12 @@ const error = ref(null)
 const user = ref(null)
 const selectedPost = ref(null)
 const newComment = ref('')
+
 const editingPostId = ref(null)
 const editContent = ref('')
+
+const editingCommentId = ref(null)
+const editCommentContent = ref('')
 
 onMounted(async () => {
   await getCurrentUser()
@@ -123,16 +127,13 @@ const addComment = async (post) => {
     })
 
     if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
-    const createdComment = await res.json()
 
-    const normalizedComment = {
-      _id: createdComment._id,
-      content: createdComment.content || newComment.value,
-      userId: createdComment.userId || user.value,
-      createdAt: createdComment.createdAt || new Date().toISOString()
-    }
+    const data = await res.json()
+    const createdComment = data.comment ?? data
 
-    post.comments.unshift(normalizedComment)
+    post.comments = post.comments || []
+    post.comments.unshift(createdComment)
+
     newComment.value = ''
   } catch (err) {
     console.error("Erreur lors de l'ajout du commentaire:", err)
@@ -168,6 +169,58 @@ const cancelEdit = () => {
   editingPostId.value = null
 }
 
+const startEditComment = (comment) => {
+  editingCommentId.value = comment._id
+  editCommentContent.value = comment.content
+}
+
+const saveEditComment = async (post, comment) => {
+  if (!editCommentContent.value.trim()) return
+
+  try {
+    const res = await fetch(`${import.meta.env.BACKEND_URL}/comments/${comment._id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: editCommentContent.value }),
+    })
+
+    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    const data = await res.json()
+
+    const index = post.comments.findIndex(c => c._id === comment._id)
+    if (index !== -1) {
+      post.comments[index].content = data.comment.content
+    }
+
+    editingCommentId.value = null
+  } catch (err) {
+    console.error("Erreur lors de la modification du commentaire:", err)
+  }
+}
+
+const cancelEditComment = () => {
+  editingCommentId.value = null
+}
+
+const deleteComment = async (post, comment) => {
+  if (!confirm('Voulez-vous vraiment supprimer ce commentaire ?')) return
+
+  try {
+    const res = await fetch(`${import.meta.env.BACKEND_URL}/comments/${comment._id}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    })
+
+    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+
+    post.comments = post.comments.filter(c => c._id !== comment._id)
+  } catch (err) {
+    console.error('Erreur lors de la suppression du commentaire :', err)
+  }
+}
+
+
 const getAvatar = (userData) => {
   if (!userData) return defaultAvatar('U')
   if (userData.profilePicture) return userData.profilePicture
@@ -191,9 +244,7 @@ const defaultAvatar = (letter) => {
     <div v-else-if="error" class="status error">{{ error }}</div>
 
     <div v-else class="posts">
-      <div v-if="posts.length === 0" class="no-posts">
-        Aucun post pour le moment.
-      </div>
+      <div v-if="posts.length === 0" class="no-posts">Aucun post pour le moment.</div>
 
       <div v-for="post in posts" :key="post._id" class="post">
         <div class="post-header">
@@ -220,11 +271,7 @@ const defaultAvatar = (letter) => {
 
         <div class="post-footer">
           <div class="left-actions">
-            <button
-              class="like-button"
-              :class="{ liked: post.userLiked }"
-              @click="toggleLike(post)"
-            >
+            <button class="like-button" :class="{ liked: post.userLiked }" @click="toggleLike(post)">
               <Heart :class="{ liked: post.userLiked }" />
               <span>{{ post.likesCount || 0 }}</span>
             </button>
@@ -234,7 +281,7 @@ const defaultAvatar = (letter) => {
             </button>
 
             <button v-if="user && post.userId._id === user._id" @click="startEdit(post)">
-              <SquarePen  /> 
+              <SquarePen /> 
             </button>
           </div>
         </div>
@@ -245,12 +292,38 @@ const defaultAvatar = (letter) => {
               <div class="comment-header">
                 <img :src="getAvatar(comment.userId)" class="avatar" />
                 <span class="comment-username">{{ comment.userId?.username || 'Utilisateur inconnu' }}</span>
+                <div v-if="user && comment.userId._id === user._id" class="comment-actions" style="margin-left:auto;">
+                <button
+                  class="btn-edit"
+                  style="padding:0.2rem 0.6rem; font-size:0.8rem;"
+                  @click="startEditComment(comment)"
+                >Modifier</button>
+
+                <button
+                  class="btn-edit"
+                  style="padding:0.2rem 0.6rem; font-size:0.8rem; color:red; border-color:red;"
+                  @click="deleteComment(post, comment)"
+                >Supprimer</button>
               </div>
-              <div class="comment-content">{{ comment.content }}</div>
-              <div class="comment-date">{{ new Date(comment.createdAt).toLocaleString() }}</div>
+
+              </div>
+
+              <div v-if="editingCommentId === comment._id" class="edit-comment-area">
+                <textarea v-model="editCommentContent" rows="2" class="edit-textarea"></textarea>
+                <div class="edit-buttons">
+                  <button class="btn-edit" @click="saveEditComment(post, comment)">Enregistrer</button>
+                  <button class="btn-edit" @click="cancelEditComment">Annuler</button>
+                </div>
+              </div>
+              <div v-else>
+                <div class="comment-content">{{ comment.content }}</div>
+                <div class="comment-date">{{ new Date(comment.createdAt).toLocaleString() }}</div>
+              </div>
             </div>
           </div>
+
           <div v-else class="no-comments">Aucun commentaire pour le moment.</div>
+
           <div class="add-comment">
             <input
               v-model="newComment"
@@ -264,6 +337,7 @@ const defaultAvatar = (letter) => {
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .home {
@@ -463,4 +537,15 @@ h1 {
   color: var(--text-main);
   transform: translateY(-1px);
 }
+
+.comment-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.btn-edit.delete:hover {
+  background-color: rgba(255, 0, 0, 0.1);
+  color: red;
+}
+
 </style>
