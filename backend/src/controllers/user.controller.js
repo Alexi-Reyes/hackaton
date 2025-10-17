@@ -77,10 +77,10 @@ class UserController {
       if (!req.body) {
         return res.status(400).json({ msg: "Request body is missing" });
       }
-      const { username, email } = req.body;
+      const { username, email, profilePicture } = req.body;
       const updatedUser = await User.findByIdAndUpdate(
         req.params.id,
-        { username, email },
+        { username, email, profilePicture },
         { new: true, runValidators: true }
       );
       if (!updatedUser) {

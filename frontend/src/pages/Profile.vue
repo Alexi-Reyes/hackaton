@@ -70,7 +70,7 @@ const saveProfile = async () => {
     }
 
     const res = await fetch(`${import.meta.env.BACKEND_URL}/users/${user.value._id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify(payload),
@@ -120,7 +120,6 @@ const saveProfile = async () => {
       <div class="field-group">
         <label class="field-label">Email</label>
         <span v-if="!editMode" class="field-value">{{ user.email }}</span>
-        <input v-else v-model="form.email" type="email" class="field-input" />
       </div>
     </div>
   </div>
