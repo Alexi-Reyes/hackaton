@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import { House, Search, MessagesSquare, Heart, CirclePlus, CircleUserRound, LogIn, LogOut } from 'lucide-vue-next';
+import { House, Search, MessagesSquare, Heart, CirclePlus, CircleUserRound, LogIn, LogOut, BarChart } from 'lucide-vue-next';
 
 const isLoggedIn = ref(false);
 const router = useRouter();
@@ -61,6 +61,10 @@ router.afterEach(() => {
 
     <RouterLink to="/profile" class="nav-item">
       <CircleUserRound /> <span>Profil</span>
+    </RouterLink>
+
+    <RouterLink to="/statistics" class="nav-item">
+      <BarChart /> <span>Statistiques</span>
     </RouterLink>
 
     <RouterLink v-if="!isLoggedIn" to="/login" class="nav-item">
