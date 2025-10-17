@@ -1,24 +1,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Heart, MessageCircleMore, SquarePen, Trash2 } from 'lucide-vue-next'
+import { Heart, MessageCircleMore } from 'lucide-vue-next'
 
-const posts = ref([])
+const likedPosts = ref([])
 const loading = ref(true)
 const error = ref(null)
 const user = ref(null)
 const selectedPost = ref(null)
 const newComment = ref('')
-
-const editingPostId = ref(null)
-const editContent = ref('')
-
-const editingCommentId = ref(null)
-const editCommentContent = ref('')
-
-onMounted(async () => {
-  await getCurrentUser()
-  await loadPosts()
-})
 
 const getCurrentUser = async () => {
   try {
@@ -29,37 +18,35 @@ const getCurrentUser = async () => {
   }
 }
 
-const loadPosts = async () => {
+const fetchLikedPosts = async () => {
   loading.value = true
   error.value = null
-  try {
-    const res = await fetch(`${import.meta.env.BACKEND_URL}/posts`, { credentials: 'include' })
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
-    const data = await res.json()
-    posts.value = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
-    for (const post of posts.value) {
-      await loadLikes(post)
+  try {
+    const res = await fetch(`${import.meta.env.BACKEND_URL}/likes/user/posts`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    })
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        throw new Error("Vous devez être connecté pour voir vos posts likés.")
+      }
+      throw new Error(`Erreur HTTP ${res.status}`)
+    }
+
+    const data = await res.json()
+    likedPosts.value = data.posts || []
+
+    for (const post of likedPosts.value) {
       await loadComments(post)
     }
   } catch (err) {
-    console.error('Erreur lors du chargement des posts:', err)
+    console.error('Erreur lors de la récupération des posts likés:', err)
     error.value = err.message
   } finally {
     loading.value = false
-  }
-}
-
-const loadLikes = async (post) => {
-  try {
-    const resLikes = await fetch(`${import.meta.env.BACKEND_URL}/likes/post/${post._id}`, { credentials: 'include' })
-    if (resLikes.ok) {
-      const likes = await resLikes.json()
-      post.likesCount = likes.length
-      post.userLiked = user.value ? likes.some(like => like.userId._id === user.value._id) : false
-    }
-  } catch (err) {
-    console.error('Erreur lors du chargement des likes:', err)
   }
 }
 
@@ -77,28 +64,26 @@ const loadComments = async (post) => {
   }
 }
 
-const toggleLike = async (post) => {
-  if (!user.value) {
-    alert('Vous devez être connecté pour liker un post.')
-    return
-  }
-
-  const alreadyLiked = post.userLiked
+const unlikePost = async (postId) => {
+  if (!confirm('Retirer ce post de vos likes ?')) return
 
   try {
     const res = await fetch(`${import.meta.env.BACKEND_URL}/likes`, {
-      method: alreadyLiked ? 'DELETE' : 'POST',
-      credentials: 'include',
+      method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ postId: post._id })
+      credentials: 'include',
+      body: JSON.stringify({ postId }) // userId récupéré depuis la session côté backend
     })
 
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    if (!res.ok) {
+      throw new Error(`Erreur HTTP ${res.status}`)
+    }
 
-    post.userLiked = !alreadyLiked
-    post.likesCount += alreadyLiked ? -1 : 1
+    // Recharger la liste des posts likés
+    await fetchLikedPosts()
   } catch (err) {
-    console.error('Erreur lors du like:', err)
+    console.error('Erreur lors du unlike:', err)
+    alert('Erreur lors du retrait du like')
   }
 }
 
@@ -127,123 +112,21 @@ const addComment = async (post) => {
     })
 
     if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    const createdComment = await res.json()
 
-    const data = await res.json()
-    const createdComment = data.comment ?? data
+    const normalizedComment = {
+      _id: createdComment._id,
+      content: createdComment.content || newComment.value,
+      userId: createdComment.userId || user.value,
+      createdAt: createdComment.createdAt || new Date().toISOString()
+    }
 
-    post.comments = post.comments || []
-    post.comments.unshift(createdComment)
+    post.comments.unshift(normalizedComment)
 
     newComment.value = ''
   } catch (err) {
-    console.error("Erreur lors de l'ajout du commentaire:", err)
+    console.error('Erreur lors de l\'ajout du commentaire:', err)
   }
-}
-
-const startEdit = (post) => {
-  editingPostId.value = post._id
-  editContent.value = post.content
-}
-
-const saveEdit = async (post) => {
-  if (!editContent.value.trim()) return
-
-  try {
-    const res = await fetch(`${import.meta.env.BACKEND_URL}/posts/${post._id}`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: editContent.value }),
-    })
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
-
-    const updated = await res.json()
-    post.content = updated.post.content
-    editingPostId.value = null
-  } catch (err) {
-    console.error("Erreur lors de la modification du post:", err)
-  }
-}
-
-const cancelEdit = () => {
-  editingPostId.value = null
-}
-
-const startEditComment = (comment) => {
-  editingCommentId.value = comment._id
-  editCommentContent.value = comment.content
-}
-
-const saveEditComment = async (post, comment) => {
-  if (!editCommentContent.value.trim()) return
-
-  try {
-    const res = await fetch(`${import.meta.env.BACKEND_URL}/comments/${comment._id}`, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: editCommentContent.value }),
-    })
-
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
-    const data = await res.json()
-
-    const index = post.comments.findIndex(c => c._id === comment._id)
-    if (index !== -1) {
-      post.comments[index].content = data.comment.content
-    }
-
-    editingCommentId.value = null
-  } catch (err) {
-    console.error("Erreur lors de la modification du commentaire:", err)
-  }
-}
-
-const cancelEditComment = () => {
-  editingCommentId.value = null
-}
-
-const deleteComment = async (post, comment) => {
-  if (!confirm('Voulez-vous vraiment supprimer ce commentaire ?')) return
-
-  try {
-    const res = await fetch(`${import.meta.env.BACKEND_URL}/comments/${comment._id}`, {
-      method: 'DELETE',
-      credentials: 'include'
-    })
-
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
-
-    post.comments = post.comments.filter(c => c._id !== comment._id)
-  } catch (err) {
-    console.error('Erreur lors de la suppression du commentaire :', err)
-  }
-}
-
-
-const deletePost = async (postId) => {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer ce post ?')) return
-
-  try {
-    const res = await fetch(`${import.meta.env.BACKEND_URL}/posts/${postId}`, {
-      method: 'DELETE',
-      credentials: 'include'
-    })
-
-    if (!res.ok) {
-      const error = await res.json()
-      throw new Error(error.msg || `Erreur HTTP ${res.status}`)
-    }
-
-    posts.value = posts.value.filter(post => post._id !== postId)
-  } catch (err) {
-    console.error('Erreur lors de la suppression:', err)
-    alert(err.message || 'Erreur lors de la suppression du post')
-  }
-}
-
-const isAuthor = (post) => {
-  return user.value && post.userId?._id === user.value._id
 }
 
 const getAvatar = (userData) => {
@@ -275,19 +158,26 @@ const formatDate = (dateString) => {
   if (days < 7) return `Il y a ${days}j`
   return date.toLocaleDateString('fr-FR')
 }
+
+onMounted(async () => {
+  await getCurrentUser()
+  await fetchLikedPosts()
+})
 </script>
 
 <template>
   <div class="home">
-    <h1>Fil d'actualité</h1>
+    <h1>Posts Likés</h1>
 
-    <div v-if="loading" class="status">Chargement des posts...</div>
+    <div v-if="loading" class="status">Chargement...</div>
     <div v-else-if="error" class="status error">{{ error }}</div>
 
     <div v-else class="posts">
-      <div v-if="posts.length === 0" class="no-posts">Aucun post pour le moment.</div>
+      <div v-if="likedPosts.length === 0" class="no-posts">
+        Aucun post liké pour le moment.
+      </div>
 
-      <div v-for="post in posts" :key="post._id" class="post">
+      <div v-for="post in likedPosts" :key="post._id" class="post">
         <div class="post-header">
           <div class="user-info">
             <img :src="getAvatar(post.userId)" class="avatar" />
@@ -299,32 +189,21 @@ const formatDate = (dateString) => {
         </div>
 
         <div class="post-content">
-          <div v-if="editingPostId === post._id">
-            <textarea v-model="editContent" rows="3" class="edit-textarea"></textarea>
-            <div class="edit-buttons">
-              <button class="btn-edit" @click="saveEdit(post)">Enregistrer</button>
-              <button class="btn-edit" @click="cancelEdit">Annuler</button>
-            </div>
-          </div>
-
-          <div v-else>
-            {{ post.content }}
-          </div>
+          {{ post.content }}
         </div>
 
         <div class="post-footer">
           <div class="left-actions">
-            <button class="like-button" :class="{ liked: post.userLiked }" @click="toggleLike(post)">
-              <Heart :class="{ liked: post.userLiked }" />
+            <button
+              class="like-button liked"
+              @click="unlikePost(post._id)"
+            >
+              <Heart class="liked" />
               <span>{{ post.likesCount || 0 }}</span>
             </button>
 
             <button class="comment-toggle" @click="toggleComments(post._id)">
               <MessageCircleMore />
-            </button>
-
-            <button v-if="user && post.userId._id === user._id" @click="startEdit(post)">
-              <SquarePen /> 
             </button>
           </div>
         </div>
@@ -335,32 +214,14 @@ const formatDate = (dateString) => {
               <div class="comment-header">
                 <img :src="getAvatar(comment.userId)" class="avatar" />
                 <span class="comment-username">{{ comment.userId?.username || 'Utilisateur inconnu' }}</span>
-                <div v-if="user && comment.userId._id === user._id" class="comment-actions" style="margin-left:auto;">
-                <button
-                  class="btn-edit"
-                  style="padding:0.2rem 0.6rem; font-size:0.8rem;"
-                  @click="startEditComment(comment)"
-                >Modifier</button>
-
-                <button
-                  class="btn-edit"
-                  style="padding:0.2rem 0.6rem; font-size:0.8rem; color:red; border-color:red;"
-                  @click="deleteComment(post, comment)"
-                >Supprimer</button>
               </div>
 
+              <div class="comment-content">
+                {{ comment.content }}
               </div>
 
-              <div v-if="editingCommentId === comment._id" class="edit-comment-area">
-                <textarea v-model="editCommentContent" rows="2" class="edit-textarea"></textarea>
-                <div class="edit-buttons">
-                  <button class="btn-edit" @click="saveEditComment(post, comment)">Enregistrer</button>
-                  <button class="btn-edit" @click="cancelEditComment">Annuler</button>
-                </div>
-              </div>
-              <div v-else>
-                <div class="comment-content">{{ comment.content }}</div>
-                <div class="comment-date">{{ new Date(comment.createdAt).toLocaleString() }}</div>
+              <div class="comment-date">
+                {{ formatDate(comment.createdAt) }}
               </div>
             </div>
           </div>
@@ -373,14 +234,13 @@ const formatDate = (dateString) => {
               placeholder="Écrire un commentaire..."
               @keyup.enter="addComment(post)"
             />
-            <button class="btn-edit" @click="addComment(post)">Envoyer</button>
+            <button @click="addComment(post)">Envoyer</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 </template>
-
 
 <style scoped>
 .home {
@@ -491,7 +351,7 @@ h1 {
   gap: 1rem;
 }
 
-.like-button, .comment-toggle, .left-actions button {
+.like-button, .comment-toggle {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -641,48 +501,4 @@ h1 {
 .add-comment button:active {
   transform: translateY(0);
 }
-
-.edit-textarea {
-  width: 100%;
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--border-accent);
-  margin-bottom: 0.5rem;
-  background-color: var(--bg-global);
-  resize: none;
-}
-
-.edit-buttons {
-  display: flex;
-  gap: 0.6rem;
-  margin-top: 0.4rem;
-}
-
-.btn-edit {
-  background-color: transparent;
-  color: var(--border-accent);
-  border: 1px solid var(--border-accent);
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.25s ease;
-}
-
-.btn-edit:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--text-main);
-  transform: translateY(-1px);
-}
-
-.comment-actions {
-  display: flex;
-  gap: 0.4rem;
-}
-
-.btn-edit.delete:hover {
-  background-color: rgba(255, 0, 0, 0.1);
-  color: red;
-}
-
 </style>

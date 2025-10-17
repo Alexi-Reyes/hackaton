@@ -3,25 +3,25 @@ import User from '../models/user.model.js';
 
 class PostController {
     async createPost(req, res) {
-    try {
-        const { content } = req.body;
+        try {
+            const { content } = req.body;
 
-        if (!content || content.trim() === '') {
-            return res.status(400).json({ msg: "Le contenu est requis" });
+            if (!content || content.trim() === '') {
+                return res.status(400).json({ msg: "Le contenu est requis" });
+            }
+
+            const newPost = new Post({
+                userId: req.user._id,
+                content
+            });
+
+            await newPost.save();
+            return res.status(201).json({ msg: 'Post créé avec succès', post: newPost });
+        } catch (err) {
+            console.error(err.message);
+            return res.status(500).send('Server error');
         }
-
-        const newPost = new Post({
-            userId: req.user._id,
-            content
-        });
-
-        await newPost.save();
-        return res.status(201).json({ msg: 'Post créé avec succès', post: newPost });
-    } catch (err) {
-        console.error(err.message);
-        return res.status(500).send('Server error');
     }
-}
 
 
     async getPosts(req, res) {
@@ -76,7 +76,7 @@ class PostController {
             const updatedPost = await Post.findById(post._id).populate('userId', 'username profilePicture');
 
             return res.status(200).json({ msg: 'Post updated successfully', post: updatedPost });
-            } catch (err) {
+        } catch (err) {
             console.error(err.message);
             if (err.kind === 'ObjectId') {
                 return res.status(400).json({ msg: 'Invalid post ID' });
@@ -88,11 +88,17 @@ class PostController {
 
     async deletePost(req, res) {
         try {
-            const deletedPost = await Post.findByIdAndDelete(req.params.id);
+            const post = await Post.findById(req.params.id);
 
-            if (!deletedPost) {
+            if (!post) {
                 return res.status(404).json({ msg: 'Post not found' });
             }
+
+            if (post.userId.toString() !== req.user._id.toString()) {
+                return res.status(403).json({ msg: 'Vous n\'êtes pas autorisé à supprimer ce post' });
+            }
+
+            await Post.findByIdAndDelete(req.params.id);
 
             return res.status(200).json({ msg: 'Post deleted successfully' });
         } catch (err) {

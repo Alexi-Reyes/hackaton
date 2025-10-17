@@ -9,20 +9,16 @@ class LikeController {
                 return res.status(400).json({ msg: "Request body is missing" });
             }
 
-            const { postId, userId } = req.body;
+            const { postId } = req.body;
+            const userId = req.user._id;
 
-            if (!postId || !userId) {
+            if (!postId) {
                 return res.status(400).json({ msg: 'Missing required fields' });
             }
 
             const postExists = await Post.findById(postId);
             if (!postExists) {
                 return res.status(404).json({ msg: 'Post not found' });
-            }
-
-            const userExists = await User.findById(userId);
-            if (!userExists) {
-                return res.status(404).json({ msg: 'User not found' });
             }
 
             const existingLike = await Like.findOne({ postId, userId });
@@ -52,9 +48,10 @@ class LikeController {
                 return res.status(400).json({ msg: "Request body is missing" });
             }
 
-            const { postId, userId } = req.body;
+            const { postId } = req.body;
+            const userId = req.user._id;
 
-            if (!postId || !userId) {
+            if (!postId) {
                 return res.status(400).json({ msg: 'Missing required fields' });
             }
 
@@ -78,6 +75,31 @@ class LikeController {
             const likes = await Like.find({ postId: req.params.postId })
                 .populate('userId', 'username profilePicture')
             return res.status(200).json(likes);
+        } catch (err) {
+            console.error(err.message);
+            return res.status(500).send('Server error');
+        }
+    }
+
+    async getLikedPostsByUser(req, res) {
+        try {
+            const userId = req.user._id;
+
+            const likes = await Like.find({ userId })
+                .populate({
+                    path: 'postId',
+                    populate: {
+                        path: 'userId',
+                        select: 'username profilePicture'
+                    }
+                })
+                .sort({ createdAt: -1 });
+
+            const validLikes = likes.filter(like => like.postId !== null);
+
+            const posts = validLikes.map(like => like.postId);
+
+            return res.status(200).json({ posts });
         } catch (err) {
             console.error(err.message);
             return res.status(500).send('Server error');
