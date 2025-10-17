@@ -287,13 +287,11 @@ const formatDate = (dateString) => {
 h1 {
   margin-bottom: 1.5rem;
   text-align: center;
-  color: var(--text-main);
   font-size: 2rem;
   font-weight: 700;
 }
 
 .status {
-  color: var(--text-main);
   text-align: center;
 }
 
@@ -350,7 +348,6 @@ h1 {
 
 .username {
   font-weight: 600;
-  color: var(--text-main);
   font-size: 1rem;
 }
 
@@ -361,7 +358,6 @@ h1 {
 }
 
 .post-content {
-  color: var(--text-main);
   line-height: 1.6;
   margin-bottom: 0.75rem;
   font-size: 0.95rem;
@@ -433,7 +429,6 @@ h1 {
   background-color: rgba(255, 255, 255, 0.04);
   padding: 0.75rem;
   border-radius: 10px;
-  color: var(--text-main);
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: background-color 0.2s ease;
 }
@@ -456,14 +451,12 @@ h1 {
 
 .comment-username {
   font-weight: 600;
-  color: var(--text-main);
   font-size: 0.9rem;
 }
 
 .comment-content {
   font-size: 0.9rem;
   line-height: 1.5;
-  color: var(--text-main);
   opacity: 0.95;
   margin-left: 2.5rem;
   margin-bottom: 0.3rem;
@@ -497,7 +490,6 @@ h1 {
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background-color: rgba(255, 255, 255, 0.05);
-  color: var(--text-main);
   font-size: 0.9rem;
   transition: all 0.2s ease;
 }
