@@ -1,9 +1,9 @@
 name: Security Scan
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, develop ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, develop ]
 
 jobs:
   secret_scan:
@@ -49,6 +49,4 @@ jobs:
         run: |
           npm install -g depcheck 
           cd ${{ matrix.project_dir }}
-          # Run depcheck. The '|| true' ensures the step does NOT fail the workflow,
-          # but simply prints the warning/error message to the console.
           depcheck || true
