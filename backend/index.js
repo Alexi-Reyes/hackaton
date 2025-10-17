@@ -22,11 +22,13 @@ app.use(cors({
     origin: process.env.FRONTEND_URL,
     credentials: true,
 }));
+app.set("trust proxy", 1)
 app.use(cookieParser());
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: { sameSite: "none", secure: true, httpOnly: true }
 }));
 
