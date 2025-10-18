@@ -1,25 +1,15 @@
 import { createRouter, createWebHistory } from "vue-router";
 
-import Home from "../pages/Home.vue";
-import Search from "../pages/Search.vue";
-import Messages from "../pages/Messages.vue";
-import Likes from "../pages/Likes.vue";
-import Post from "../pages/Post.vue";
-import Profile from "../pages/Profile.vue";
-import Statistics from "../pages/Statistics.vue";
-import Login from "../pages/Login.vue";
-import Register from "../pages/Register.vue";
-
 const routes = [
-  { path: "/", name: "Home", component: Home },
-  { path: "/search", name: "Search", component: Search },
-  { path: "/messages", name: "Messages", component: Messages },
-  { path: "/likes", name: "Likes", component: Likes },
-  { path: "/post", name: "Post", component: Post },
-  { path: "/profile", name: "Profile", component: Profile },
-  { path: "/login", name: "Login", component: Login },
-  { path: "/register", name: "Register", component: Register },
-  { path: "/statistics", name: "Statistics", component: Statistics },
+  { path: "/", name: "Home", component: () => import("../pages/Home.vue") },
+  { path: "/search", name: "Search", component: () => import("../pages/Search.vue") },
+  { path: "/messages", name: "Messages", component: () => import("../pages/Messages.vue") },
+  { path: "/likes", name: "Likes", component: () => import("../pages/Likes.vue") },
+  { path: "/post", name: "Post", component: () => import("../pages/Post.vue") },
+  { path: "/profile", name: "Profile", component: () => import("../pages/Profile.vue") },
+  { path: "/login", name: "Login", component: () => import("../pages/Login.vue") },
+  { path: "/register", name: "Register", component: () => import("../pages/Register.vue") },
+  { path: "/statistics", name: "Statistics", component: () => import("../pages/Statistics.vue") },
 ];
 
 const router = createRouter({

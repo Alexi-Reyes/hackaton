@@ -1,5 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { APP_MESSAGES } from '../utils/messages.js'
+import { getAvatar, defaultAvatar } from '../utils/helpers.js'
 
 const user = ref(null)
 const loading = ref(true)
@@ -18,14 +20,14 @@ const loadProfile = async () => {
     const res = await fetch(`${import.meta.env.BACKEND_URL}/users/profile`, {
       credentials: 'include',
     })
-    if (!res.ok) throw new Error("Impossible de charger le profil")
+    if (!res.ok) throw new Error(APP_MESSAGES.PROFILE_LOAD_ERROR)
     const data = await res.json()
     user.value = data
     form.value.username = data.username
     form.value.email = data.email
     form.value.profilePicture = data.profilePicture || ''
   } catch (err) {
-    console.error(err)
+    console.error(APP_MESSAGES.CONSOLE_PROFILE_ERROR, err)
     error.value = err.message
   } finally {
     loading.value = false
@@ -50,15 +52,7 @@ const handleFileUpload = (event) => {
 
 const displayAvatar = computed(() => {
   if (form.value.profilePicture) return form.value.profilePicture
-  if (form.value.username) {
-    const letter = form.value.username.charAt(0).toUpperCase()
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
-      <rect width="100" height="100" fill="#ccc" />
-      <text x="50%" y="50%" font-size="50" text-anchor="middle" dominant-baseline="central" fill="#000">${letter}</text>
-    </svg>`
-    return `data:image/svg+xml;base64,${btoa(svg)}`
-  }
-  return ''
+  return getAvatar(form.value)
 })
 
 const saveProfile = async () => {
@@ -75,13 +69,13 @@ const saveProfile = async () => {
       credentials: 'include',
       body: JSON.stringify(payload),
     })
-    if (!res.ok) throw new Error('Erreur lors de la mise à jour du profil')
+    if (!res.ok) throw new Error(APP_MESSAGES.PROFILE_UPDATE_ERROR)
     const data = await res.json()
     user.value = data.user
     editMode.value = false
     avatarFile.value = null
   } catch (err) {
-    console.error(err)
+    console.error(APP_MESSAGES.CONSOLE_PROFILE_UPDATE_ERROR, err)
     error.value = err.message
   }
 }
@@ -90,13 +84,13 @@ const saveProfile = async () => {
 <template>
   <div class="profile">
     <div class="profile-header">
-      <h1>Mon profil</h1>
+      <h1>{{ APP_MESSAGES.PROFILE_TITLE }}</h1>
       <button @click="editMode ? saveProfile() : toggleEdit()" class="edit-btn">
-        {{ editMode ? 'Enregistrer' : 'Modifier le profil' }}
+        {{ editMode ? APP_MESSAGES.PROFILE_SAVE_BUTTON : APP_MESSAGES.PROFILE_EDIT_BUTTON }}
       </button>
     </div>
 
-    <div v-if="loading" class="status">Chargement...</div>
+    <div v-if="loading" class="status">{{ APP_MESSAGES.PROFILE_LOADING }}</div>
     <div v-else-if="error" class="status error">{{ error }}</div>
 
     <div v-else class="info">
@@ -112,14 +106,14 @@ const saveProfile = async () => {
       </div>
 
       <div class="field-group">
-        <label class="field-label">Nom d'utilisateur</label>
+        <label class="field-label">{{ APP_MESSAGES.PROFILE_USERNAME_LABEL }}</label>
         <span v-if="!editMode" class="field-value">{{ user.username }}</span>
         <input v-else v-model="form.username" type="text" class="field-input" />
       </div>
 
-      <div class="field-group">
-        <label class="field-label">Email</label>
-        <span v-if="!editMode" class="field-value">{{ user.email }}</span>
+      <div v-if="!editMode" class="field-group">
+        <label class="field-label">{{ APP_MESSAGES.PROFILE_EMAIL_LABEL }}</label>
+        <span class="field-value">{{ user.email }}</span>
       </div>
     </div>
   </div>
@@ -132,6 +126,7 @@ const saveProfile = async () => {
   border-radius: 16px;
   box-shadow: 2px 0 10px rgba(0,0,0,0.1);
   max-width: 500px;
+  margin: auto;
 }
 
 .profile-header {

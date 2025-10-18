@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { House, Search, MessagesSquare, Heart, CirclePlus, CircleUserRound, LogIn, LogOut, BarChart } from 'lucide-vue-next';
+import { APP_MESSAGES } from '../utils/messages.js';
 
 const isLoggedIn = ref(false);
 const router = useRouter();
@@ -20,11 +21,11 @@ const handleLogout = async () => {
   try {
     await axios.post(`${import.meta.env.BACKEND_URL}/users/logout`);
     isLoggedIn.value = false;
-    alert('Déconnexion réussie !');
+    alert(APP_MESSAGES.LOGOUT_SUCCESS);
     router.push('/login');
   } catch (error) {
-    console.error('Erreur lors de la déconnexion:', error);
-    alert('Erreur lors de la déconnexion.');
+    console.error(APP_MESSAGES.CONSOLE_LOGOUT_ERROR, error);
+    alert(APP_MESSAGES.LOGOUT_ERROR);
   }
 };
 
@@ -40,38 +41,38 @@ router.afterEach(() => {
 <template>
   <div class="container">
     <RouterLink to="/" class="nav-item">
-      <House /> <span>Accueil</span>
+      <House /> <span>{{ APP_MESSAGES.NAV_HOME }}</span>
     </RouterLink>
 
     <RouterLink to="/search" class="nav-item">
-      <Search /> <span>Recherche</span>
+      <Search /> <span>{{ APP_MESSAGES.NAV_SEARCH }}</span>
     </RouterLink>
 
     <RouterLink to="/messages" class="nav-item">
-      <MessagesSquare /> <span>Messages</span>
+      <MessagesSquare /> <span>{{ APP_MESSAGES.NAV_MESSAGES }}</span>
     </RouterLink>
 
     <RouterLink to="/likes" class="nav-item">
-      <Heart /> <span>J'aime</span>
+      <Heart /> <span>{{ APP_MESSAGES.NAV_LIKES }}</span>
     </RouterLink>
 
     <RouterLink to="/post" class="nav-item">
-      <CirclePlus /> <span>Post</span>
+      <CirclePlus /> <span>{{ APP_MESSAGES.NAV_POST }}</span>
     </RouterLink>
 
     <RouterLink to="/profile" class="nav-item">
-      <CircleUserRound /> <span>Profil</span>
+      <CircleUserRound /> <span>{{ APP_MESSAGES.NAV_PROFILE }}</span>
     </RouterLink>
 
     <RouterLink to="/statistics" class="nav-item">
-      <BarChart /> <span>Statistiques</span>
+      <BarChart /> <span>{{ APP_MESSAGES.NAV_STATISTICS }}</span>
     </RouterLink>
 
     <RouterLink v-if="!isLoggedIn" to="/login" class="nav-item">
-      <LogIn /> <span>Login</span>
+      <LogIn /> <span>{{ APP_MESSAGES.NAV_LOGIN }}</span>
     </RouterLink>
     <a v-else @click="handleLogout" class="nav-item">
-      <LogOut /> <span>Logout</span>
+      <LogOut /> <span>{{ APP_MESSAGES.NAV_LOGOUT }}</span>
     </a>
   </div>
 </template>

@@ -1,14 +1,14 @@
 <template>
   <div class="container">
     <div class="card">
-      <h1>Inscription</h1>
+      <h1>{{ APP_MESSAGES.REGISTER_TITLE }}</h1>
 
       <form @submit.prevent="handleRegister">
         <div class="input-group">
           <input
             v-model="username"
             type="text"
-            placeholder="Nom d'utilisateur"
+            :placeholder="APP_MESSAGES.USERNAME_PLACEHOLDER"
             required
           />
         </div>
@@ -17,7 +17,7 @@
           <input
             v-model="email"
             type="email"
-            placeholder="Email"
+            :placeholder="APP_MESSAGES.EMAIL_PLACEHOLDER"
             required
           />
         </div>
@@ -26,7 +26,7 @@
           <input
             v-model="password"
             type="password"
-            placeholder="Mot de passe"
+            :placeholder="APP_MESSAGES.PASSWORD_PLACEHOLDER"
             required
           />
         </div>
@@ -35,100 +35,85 @@
           <input
             v-model="confirmPassword"
             type="password"
-            placeholder="Confirmer le mot de passe"
+            :placeholder="APP_MESSAGES.CONFIRM_PASSWORD_PLACEHOLDER"
             required
           />
         </div>
 
         <div class="input-group">
-          <label class="label">Choisir un avatar (optionnel)</label>
+          <label class="label">{{ APP_MESSAGES.CHOOSE_AVATAR_LABEL }}</label>
           <input type="file" accept="image/*" @change="handleFileUpload" />
-          <input
-            v-model="avatarUrl"
-            type="url"
-            placeholder="Ou collez une URL d’image"
-          />
         </div>
 
         <div v-if="previewImage" class="preview">
-          <img :src="previewImage" alt="Aperçu de l'avatar" />
+          <img :src="previewImage" :alt="APP_MESSAGES.AVATAR_PREVIEW_ALT" />
         </div>
 
-        <button type="submit" class="btn">S'inscrire</button>
+        <button type="submit" class="btn">{{ APP_MESSAGES.REGISTER_BUTTON }}</button>
       </form>
 
       <p class="footer-text">
-        Déjà inscrit ?
-        <a href="/login">Se connecter</a>
+        {{ APP_MESSAGES.ALREADY_REGISTERED_TEXT }}
+        <a href="/login">{{ APP_MESSAGES.LOGIN_LINK }}</a>
       </p>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref } from "vue";
 import axios from "axios";
 import { useRouter } from "vue-router";
+import { APP_MESSAGES } from '../utils/messages.js';
 
-export default {
-  name: "Register",
-  setup() {
-    const router = useRouter();
-    return { router };
-  },
-  data() {
-    return {
-      username: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      avatarFile: null,     
-      avatarUrl: "",         
-      previewImage: null,   
-    };
-  },
-  methods: {
-    handleFileUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      this.avatarFile = file;
+const username = ref("");
+const email = ref("");
+const password = ref("");
+const confirmPassword = ref("");
+const avatarFile = ref(null);
+const previewImage = ref(null);
+const router = useRouter();
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.previewImage = e.target.result; 
-      };
-      reader.readAsDataURL(file);
-    },
+const handleFileUpload = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  avatarFile.value = file;
 
-    async handleRegister() {
-      if (this.password !== this.confirmPassword) {
-        alert("Les mots de passe ne correspondent pas");
-        return;
-      }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    previewImage.value = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
 
-      let profilePicture = this.previewImage || this.avatarUrl || null;
+const handleRegister = async () => {
+  if (password.value !== confirmPassword.value) {
+    alert(APP_MESSAGES.PASSWORDS_DO_NOT_MATCH);
+    return;
+  }
 
-      try {
-        const response = await axios.post(`${import.meta.env.BACKEND_URL}/users/register`, {
-          username: this.username,
-          email: this.email,
-          password: this.password,
-          profilePicture,
-        });
-        console.log('Inscription réussie:', response.data);
-        alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
-        this.router.push('/login');
-      } catch (error) {
-        console.error(
-          "Erreur lors de l'inscription:",
-          error.response ? error.response.data : error.message
-        );
-        alert(
-          "Erreur lors de l'inscription: " +
-            (error.response ? error.response.data.msg : error.message)
-        );
-      }
-    },
-  },
+  let profilePicture = previewImage.value || null;
+
+  try {
+    const response = await axios.post(`${import.meta.env.BACKEND_URL}/users/register`, {
+      username: username.value,
+      email: email.value,
+      password: password.value,
+      profilePicture,
+    });
+    console.log(APP_MESSAGES.CONSOLE_REGISTER_SUCCESS, response.data);
+    alert(APP_MESSAGES.REGISTER_SUCCESS_ALERT);
+    router.push('/login');
+  } catch (error) {
+    console.error(
+      APP_MESSAGES.CONSOLE_REGISTER_ERROR,
+      error.response ? error.response.data : error.message
+    );
+    alert(
+      APP_MESSAGES.REGISTER_ERROR_ALERT +
+        (error.response ? error.response.data.msg : error.message)
+    );
+  }
 };
 </script>
 
@@ -167,8 +152,7 @@ input[type="file"] {
   color: #ffffff;
 }
 
-input,
-input[type="url"] {
+input {
   width: 100%;
   padding: 0.75rem 1rem;
   background: #0a0a0a;

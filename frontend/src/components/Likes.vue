@@ -1,6 +1,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { Heart, MessageCircleMore } from 'lucide-vue-next'
+import { APP_MESSAGES } from '../utils/messages.js'
+import { getAvatar, formatDate } from '../utils/helpers.js'
 
 const likedPosts = ref([])
 const loading = ref(true)
@@ -14,7 +16,7 @@ const getCurrentUser = async () => {
     const res = await fetch(`${import.meta.env.BACKEND_URL}/users/profile`, { credentials: 'include' })
     if (res.ok) user.value = await res.json()
   } catch (err) {
-    console.error('Erreur utilisateur:', err)
+    console.error(APP_MESSAGES.CONSOLE_USER_ERROR, err)
   }
 }
 
@@ -31,9 +33,9 @@ const fetchLikedPosts = async () => {
 
     if (!res.ok) {
       if (res.status === 401) {
-        throw new Error("Vous devez être connecté pour voir vos posts likés.")
+        throw new Error(APP_MESSAGES.UNAUTHORIZED_LIKED_POSTS)
       }
-      throw new Error(`Erreur HTTP ${res.status}`)
+      throw new Error(APP_MESSAGES.HTTP_ERROR(res.status))
     }
 
     const data = await res.json()
@@ -43,7 +45,7 @@ const fetchLikedPosts = async () => {
       await loadComments(post)
     }
   } catch (err) {
-    console.error('Erreur lors de la récupération des posts likés:', err)
+    console.error(APP_MESSAGES.CONSOLE_FETCH_LIKED_POSTS_ERROR, err)
     error.value = err.message
   } finally {
     loading.value = false
@@ -59,31 +61,30 @@ const loadComments = async (post) => {
       post.comments = []
     }
   } catch (err) {
-    console.error('Erreur lors du chargement des commentaires:', err)
+    console.error(APP_MESSAGES.CONSOLE_LOAD_COMMENTS_ERROR, err)
     post.comments = []
   }
 }
 
 const unlikePost = async (postId) => {
-  if (!confirm('Retirer ce post de vos likes ?')) return
+  if (!confirm(APP_MESSAGES.CONFIRM_UNLIKE_POST)) return
 
   try {
     const res = await fetch(`${import.meta.env.BACKEND_URL}/likes`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ postId }) // userId récupéré depuis la session côté backend
+      body: JSON.stringify({ postId })
     })
 
     if (!res.ok) {
-      throw new Error(`Erreur HTTP ${res.status}`)
+      throw new Error(APP_MESSAGES.HTTP_ERROR(res.status))
     }
 
-    // Recharger la liste des posts likés
     await fetchLikedPosts()
   } catch (err) {
-    console.error('Erreur lors du unlike:', err)
-    alert('Erreur lors du retrait du like')
+    console.error(APP_MESSAGES.CONSOLE_UNLIKE_ERROR, err)
+    alert(APP_MESSAGES.UNLIKE_ERROR)
   }
 }
 
@@ -93,7 +94,7 @@ const toggleComments = (postId) => {
 
 const addComment = async (post) => {
   if (!user.value) {
-    alert('Vous devez être connecté pour commenter.')
+    alert(APP_MESSAGES.UNAUTHORIZED_COMMENT)
     return
   }
 
@@ -111,7 +112,7 @@ const addComment = async (post) => {
       })
     })
 
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    if (!res.ok) throw new Error(APP_MESSAGES.HTTP_ERROR(res.status))
     const createdComment = await res.json()
 
     const normalizedComment = {
@@ -125,39 +126,10 @@ const addComment = async (post) => {
 
     newComment.value = ''
   } catch (err) {
-    console.error('Erreur lors de l\'ajout du commentaire:', err)
+    console.error(APP_MESSAGES.CONSOLE_ADD_COMMENT_ERROR, err)
   }
 }
 
-const getAvatar = (userData) => {
-  if (!userData) return defaultAvatar('U')
-  if (userData.profilePicture) return userData.profilePicture
-  return defaultAvatar(userData.username?.charAt(0).toUpperCase() || 'U')
-}
-
-const defaultAvatar = (letter) => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50">
-    <rect width="50" height="50" fill="#ccc"/>
-    <text x="50%" y="50%" font-size="24" text-anchor="middle" dominant-baseline="central" fill="#000">${letter}</text>
-  </svg>`
-  return `data:image/svg+xml;base64,${btoa(svg)}`
-}
-
-const formatDate = (dateString) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  const now = new Date()
-  const diff = now - date
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-
-  if (minutes < 1) return 'À l\'instant'
-  if (minutes < 60) return `Il y a ${minutes} min`
-  if (hours < 24) return `Il y a ${hours}h`
-  if (days < 7) return `Il y a ${days}j`
-  return date.toLocaleDateString('fr-FR')
-}
 
 onMounted(async () => {
   await getCurrentUser()
@@ -169,12 +141,12 @@ onMounted(async () => {
   <div class="home">
     <h1>Posts Likés</h1>
 
-    <div v-if="loading" class="status">Chargement...</div>
+    <div v-if="loading" class="status">{{ APP_MESSAGES.LOADING }}</div>
     <div v-else-if="error" class="status error">{{ error }}</div>
 
     <div v-else class="posts">
       <div v-if="likedPosts.length === 0" class="no-posts">
-        Aucun post liké pour le moment.
+        {{ APP_MESSAGES.NO_LIKED_POSTS }}
       </div>
 
       <div v-for="post in likedPosts" :key="post._id" class="post">
@@ -182,7 +154,7 @@ onMounted(async () => {
           <div class="user-info">
             <img :src="getAvatar(post.userId)" class="avatar" />
             <div class="user-details">
-              <span class="username">{{ post.userId?.username || 'Utilisateur inconnu' }}</span>
+              <span class="username">{{ post.userId?.username || APP_MESSAGES.UNKNOWN_USER }}</span>
               <span class="date">{{ formatDate(post.createdAt) }}</span>
             </div>
           </div>
@@ -213,7 +185,7 @@ onMounted(async () => {
             <div v-for="comment in post.comments" :key="comment._id" class="comment">
               <div class="comment-header">
                 <img :src="getAvatar(comment.userId)" class="avatar" />
-                <span class="comment-username">{{ comment.userId?.username || 'Utilisateur inconnu' }}</span>
+                <span class="comment-username">{{ comment.userId?.username || APP_MESSAGES.UNKNOWN_USER }}</span>
               </div>
 
               <div class="comment-content">
@@ -226,15 +198,15 @@ onMounted(async () => {
             </div>
           </div>
 
-          <div v-else class="no-comments">Aucun commentaire pour le moment.</div>
+          <div v-else class="no-comments">{{ APP_MESSAGES.NO_COMMENTS }}</div>
 
           <div class="add-comment">
             <input
               v-model="newComment"
-              placeholder="Écrire un commentaire..."
+              :placeholder="APP_MESSAGES.WRITE_COMMENT_PLACEHOLDER"
               @keyup.enter="addComment(post)"
             />
-            <button @click="addComment(post)">Envoyer</button>
+            <button @click="addComment(post)">{{ APP_MESSAGES.SEND_BUTTON }}</button>
           </div>
         </div>
       </div>
