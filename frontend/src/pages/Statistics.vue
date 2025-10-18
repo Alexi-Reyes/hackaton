@@ -1,15 +1,15 @@
 <template>
   <div class="statistics-container">
-    <h1>Statistiques Utilisateurs</h1>
+    <h1>{{ APP_MESSAGES.STATISTICS_TITLE }}</h1>
 
-    <div v-if="loading" class="status">Chargement des statistiques...</div>
+    <div v-if="loading" class="status">{{ APP_MESSAGES.STATISTICS_LOADING }}</div>
     <div v-else-if="error" class="status error">{{ error }}</div>
 
     <div v-else class="statistics-grid">
       <div class="kpi-card">
         <div class="kpi-header">
           <Users class="kpi-icon" />
-          <h2>Total Utilisateurs</h2>
+          <h2>{{ APP_MESSAGES.STATISTICS_TOTAL_USERS }}</h2>
         </div>
         <p class="kpi-value">{{ statistics.totalUsers }}</p>
       </div>
@@ -17,39 +17,39 @@
       <div class="kpi-card">
         <div class="kpi-header">
           <MessageSquareMore class="kpi-icon" />
-          <h2>Utilisateur avec le plus de Posts</h2>
+          <h2>{{ APP_MESSAGES.STATISTICS_USER_MOST_POSTS }}</h2>
         </div>
         <p v-if="statistics.userWithMostPosts" class="kpi-value-detail">
           <span class="username">{{ statistics.userWithMostPosts.username }}</span>
-          <span class="count">({{ statistics.userWithMostPosts.postCount }} posts)</span>
+          <span class="count">({{ APP_MESSAGES.STATISTICS_POSTS_COUNT(statistics.userWithMostPosts.postCount) }})</span>
         </p>
-        <p v-else class="kpi-value-detail">N/A</p>
+        <p v-else class="kpi-value-detail">{{ APP_MESSAGES.STATISTICS_NA }}</p>
       </div>
 
       <div class="kpi-card">
         <div class="kpi-header">
           <HeartHandshake class="kpi-icon" />
-          <h2>Post avec le plus de Likes</h2>
+          <h2>{{ APP_MESSAGES.STATISTICS_POST_MOST_LIKES }}</h2>
         </div>
         <p v-if="statistics.postWithMostLikes" class="kpi-value-detail">
           <span class="post-content">"{{ statistics.postWithMostLikes.postContent }}"</span>
           <br />
           <span class="username">{{ statistics.postWithMostLikes.postAuthorUsername }}</span>
-          <span class="count">({{ statistics.postWithMostLikes.likeCount }} likes)</span>
+          <span class="count">({{ APP_MESSAGES.STATISTICS_LIKES_COUNT(statistics.postWithMostLikes.likeCount) }})</span>
         </p>
-        <p v-else class="kpi-value-detail">N/A</p>
+        <p v-else class="kpi-value-detail">{{ APP_MESSAGES.STATISTICS_NA }}</p>
       </div>
 
       <div class="kpi-card">
         <div class="kpi-header">
           <Award class="kpi-icon" />
-          <h2>Utilisateur (total likes)</h2>
+          <h2>{{ APP_MESSAGES.STATISTICS_USER_MOST_TOTAL_LIKES }}</h2>
         </div>
         <p v-if="statistics.userWithMostTotalLikes" class="kpi-value-detail">
           <span class="username">{{ statistics.userWithMostTotalLikes.username }}</span>
-          <span class="count">({{ statistics.userWithMostTotalLikes.totalLikeCount }} likes)</span>
+          <span class="count">({{ APP_MESSAGES.STATISTICS_LIKES_COUNT(statistics.userWithMostTotalLikes.totalLikeCount) }})</span>
         </p>
-        <p v-else class="kpi-value-detail">N/A</p>
+        <p v-else class="kpi-value-detail">{{ APP_MESSAGES.STATISTICS_NA }}</p>
       </div>
     </div>
   </div>
@@ -59,6 +59,7 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { Users, MessageSquareMore, HeartHandshake, Award } from 'lucide-vue-next';
+import { APP_MESSAGES } from '../utils/messages.js';
 
 const statistics = ref({
   totalUsers: 0,
@@ -76,8 +77,8 @@ const fetchStatistics = async () => {
     const response = await axios.get(`${import.meta.env.BACKEND_URL}/users/statistics`);
     statistics.value = response.data;
   } catch (err) {
-    console.error('Erreur lors du chargement des statistiques:', err);
-    error.value = 'Impossible de charger les statistiques.';
+    console.error(APP_MESSAGES.CONSOLE_STATISTICS_ERROR, err);
+    error.value = APP_MESSAGES.STATISTICS_LOAD_ERROR;
   } finally {
     loading.value = false;
   }

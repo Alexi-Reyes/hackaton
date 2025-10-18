@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { APP_MESSAGES } from '../utils/messages.js'
 
 const content = ref('')
 const loading = ref(false)
@@ -12,7 +13,7 @@ const submitPost = async () => {
   success.value = null
 
   if (!content.value.trim()) {
-    error.value = "Le contenu du post ne peut pas être vide."
+    error.value = APP_MESSAGES.POST_CONTENT_EMPTY
     loading.value = false
     return
   }
@@ -27,17 +28,17 @@ const submitPost = async () => {
 
     if (!res.ok) {
       if (res.status === 401) {
-        throw new Error("Vous devez être connecté pour publier un post.")
+        throw new Error(APP_MESSAGES.UNAUTHORIZED_CREATE_POST)
       }
-      throw new Error(`Erreur HTTP ${res.status}`)
+      throw new Error(APP_MESSAGES.HTTP_ERROR(res.status))
     }
 
     const data = await res.json()
-    success.value = "Post créé avec succès !"
+    success.value = APP_MESSAGES.POST_CREATED_SUCCESS_ALERT
     content.value = ''
-    console.log('Post créé:', data.post)
+    console.log(APP_MESSAGES.CONSOLE_POST_CREATED, data.post)
   } catch (err) {
-    console.error('Erreur lors de la création du post:', err)
+    console.error(APP_MESSAGES.CONSOLE_CREATE_POST_ERROR, err)
     error.value = err.message
   } finally {
     loading.value = false
@@ -47,18 +48,18 @@ const submitPost = async () => {
 
 <template>
   <div class="post-form">
-    <h2>Créer un nouveau post</h2>
+    <h2>{{ APP_MESSAGES.CREATE_NEW_POST_TITLE }}</h2>
 
     <textarea
       v-model="content"
-      placeholder="Quoi de neuf ?"
+      :placeholder="APP_MESSAGES.WHAT_IS_NEW_PLACEHOLDER"
       rows="4"
       :disabled="loading"
     ></textarea>
 
-    <button @click="submitPost" :disabled="loading">Publier</button>
+    <button @click="submitPost" :disabled="loading">{{ APP_MESSAGES.PUBLISH_BUTTON }}</button>
 
-    <div v-if="loading" class="status">Publication en cours...</div>
+    <div v-if="loading" class="status">{{ APP_MESSAGES.POSTING_IN_PROGRESS }}</div>
     <div v-if="error" class="status error">{{ error }}</div>
     <div v-if="success" class="status success">{{ success }}</div>
   </div>

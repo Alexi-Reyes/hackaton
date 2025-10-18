@@ -1,6 +1,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { Heart, MessageCircleMore, SquarePen, Trash2 } from 'lucide-vue-next'
+import { APP_MESSAGES } from '../utils/messages.js'
+import { getAvatar, formatDate } from '../utils/helpers.js'
 
 const posts = ref([])
 const loading = ref(true)
@@ -25,7 +27,7 @@ const getCurrentUser = async () => {
     const res = await fetch(`${import.meta.env.BACKEND_URL}/users/profile`, { credentials: 'include' })
     if (res.ok) user.value = await res.json()
   } catch (err) {
-    console.error('Erreur utilisateur:', err)
+    console.error(APP_MESSAGES.CONSOLE_USER_ERROR, err)
   }
 }
 
@@ -34,7 +36,7 @@ const loadPosts = async () => {
   error.value = null
   try {
     const res = await fetch(`${import.meta.env.BACKEND_URL}/posts`, { credentials: 'include' })
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    if (!res.ok) throw new Error(APP_MESSAGES.HTTP_ERROR(res.status))
     const data = await res.json()
     posts.value = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
@@ -43,7 +45,7 @@ const loadPosts = async () => {
       await loadComments(post)
     }
   } catch (err) {
-    console.error('Erreur lors du chargement des posts:', err)
+    console.error(APP_MESSAGES.CONSOLE_LOAD_POSTS_ERROR, err)
     error.value = err.message
   } finally {
     loading.value = false
@@ -59,7 +61,7 @@ const loadLikes = async (post) => {
       post.userLiked = user.value ? likes.some(like => like.userId._id === user.value._id) : false
     }
   } catch (err) {
-    console.error('Erreur lors du chargement des likes:', err)
+    console.error(APP_MESSAGES.CONSOLE_LOAD_LIKES_ERROR, err)
   }
 }
 
@@ -72,14 +74,14 @@ const loadComments = async (post) => {
       post.comments = []
     }
   } catch (err) {
-    console.error('Erreur lors du chargement des commentaires:', err)
+    console.error(APP_MESSAGES.CONSOLE_LOAD_COMMENTS_ERROR, err)
     post.comments = []
   }
 }
 
 const toggleLike = async (post) => {
   if (!user.value) {
-    alert('Vous devez être connecté pour liker un post.')
+    alert(APP_MESSAGES.UNAUTHORIZED_LIKE_POST)
     return
   }
 
@@ -93,12 +95,12 @@ const toggleLike = async (post) => {
       body: JSON.stringify({ postId: post._id })
     })
 
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    if (!res.ok) throw new Error(APP_MESSAGES.HTTP_ERROR(res.status))
 
     post.userLiked = !alreadyLiked
     post.likesCount += alreadyLiked ? -1 : 1
   } catch (err) {
-    console.error('Erreur lors du like:', err)
+    console.error(APP_MESSAGES.CONSOLE_LIKE_ERROR, err)
   }
 }
 
@@ -108,7 +110,7 @@ const toggleComments = (postId) => {
 
 const addComment = async (post) => {
   if (!user.value) {
-    alert('Vous devez être connecté pour commenter.')
+    alert(APP_MESSAGES.UNAUTHORIZED_COMMENT)
     return
   }
 
@@ -126,7 +128,7 @@ const addComment = async (post) => {
       })
     })
 
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    if (!res.ok) throw new Error(APP_MESSAGES.HTTP_ERROR(res.status))
 
     const data = await res.json()
     const createdComment = data.comment ?? data
@@ -136,7 +138,7 @@ const addComment = async (post) => {
 
     newComment.value = ''
   } catch (err) {
-    console.error("Erreur lors de l'ajout du commentaire:", err)
+    console.error(APP_MESSAGES.CONSOLE_ADD_COMMENT_ERROR, err)
   }
 }
 
@@ -155,13 +157,13 @@ const saveEdit = async (post) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: editContent.value }),
     })
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    if (!res.ok) throw new Error(APP_MESSAGES.HTTP_ERROR(res.status))
 
     const updated = await res.json()
     post.content = updated.post.content
     editingPostId.value = null
   } catch (err) {
-    console.error("Erreur lors de la modification du post:", err)
+    console.error(APP_MESSAGES.CONSOLE_EDIT_POST_ERROR, err)
   }
 }
 
@@ -185,7 +187,7 @@ const saveEditComment = async (post, comment) => {
       body: JSON.stringify({ content: editCommentContent.value }),
     })
 
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    if (!res.ok) throw new Error(APP_MESSAGES.HTTP_ERROR(res.status))
     const data = await res.json()
 
     const index = post.comments.findIndex(c => c._id === comment._id)
@@ -195,7 +197,7 @@ const saveEditComment = async (post, comment) => {
 
     editingCommentId.value = null
   } catch (err) {
-    console.error("Erreur lors de la modification du commentaire:", err)
+    console.error(APP_MESSAGES.CONSOLE_EDIT_COMMENT_ERROR, err)
   }
 }
 
@@ -204,7 +206,7 @@ const cancelEditComment = () => {
 }
 
 const deleteComment = async (post, comment) => {
-  if (!confirm('Voulez-vous vraiment supprimer ce commentaire ?')) return
+  if (!confirm(APP_MESSAGES.CONFIRM_DELETE_COMMENT)) return
 
   try {
     const res = await fetch(`${import.meta.env.BACKEND_URL}/comments/${comment._id}`, {
@@ -212,17 +214,17 @@ const deleteComment = async (post, comment) => {
       credentials: 'include'
     })
 
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    if (!res.ok) throw new Error(APP_MESSAGES.HTTP_ERROR(res.status))
 
     post.comments = post.comments.filter(c => c._id !== comment._id)
   } catch (err) {
-    console.error('Erreur lors de la suppression du commentaire :', err)
+    console.error(APP_MESSAGES.CONSOLE_DELETE_COMMENT_ERROR, err)
   }
 }
 
 
 const deletePost = async (postId) => {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer ce post ?')) return
+  if (!confirm(APP_MESSAGES.CONFIRM_DELETE_POST)) return
 
   try {
     const res = await fetch(`${import.meta.env.BACKEND_URL}/posts/${postId}`, {
@@ -232,13 +234,13 @@ const deletePost = async (postId) => {
 
     if (!res.ok) {
       const error = await res.json()
-      throw new Error(error.msg || `Erreur HTTP ${res.status}`)
+      throw new Error(error.msg || APP_MESSAGES.HTTP_ERROR(res.status))
     }
 
     posts.value = posts.value.filter(post => post._id !== postId)
   } catch (err) {
-    console.error('Erreur lors de la suppression:', err)
-    alert(err.message || 'Erreur lors de la suppression du post')
+    console.error(APP_MESSAGES.CONSOLE_DELETE_POST_ERROR, err)
+    alert(err.message || APP_MESSAGES.DELETE_POST_ERROR_ALERT)
   }
 }
 
@@ -246,53 +248,24 @@ const isAuthor = (post) => {
   return user.value && post.userId?._id === user.value._id
 }
 
-const getAvatar = (userData) => {
-  if (!userData) return defaultAvatar('U')
-  if (userData.profilePicture) return userData.profilePicture
-  return defaultAvatar(userData.username?.charAt(0).toUpperCase() || 'U')
-}
-
-const defaultAvatar = (letter) => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50">
-    <rect width="50" height="50" fill="#ccc"/>
-    <text x="50%" y="50%" font-size="24" text-anchor="middle" dominant-baseline="central" fill="#000">${letter}</text>
-  </svg>`
-  return `data:image/svg+xml;base64,${btoa(svg)}`
-}
-
-const formatDate = (dateString) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  const now = new Date()
-  const diff = now - date
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-
-  if (minutes < 1) return 'À l\'instant'
-  if (minutes < 60) return `Il y a ${minutes} min`
-  if (hours < 24) return `Il y a ${hours}h`
-  if (days < 7) return `Il y a ${days}j`
-  return date.toLocaleDateString('fr-FR')
-}
 </script>
 
 <template>
   <div class="home">
-    <h1>Fil d'actualité</h1>
+    <h1>{{ APP_MESSAGES.HOME_FEED_TITLE }}</h1>
 
-    <div v-if="loading" class="status">Chargement des posts...</div>
+    <div v-if="loading" class="status">{{ APP_MESSAGES.LOADING_POSTS }}</div>
     <div v-else-if="error" class="status error">{{ error }}</div>
 
     <div v-else class="posts">
-      <div v-if="posts.length === 0" class="no-posts">Aucun post pour le moment.</div>
+      <div v-if="posts.length === 0" class="no-posts">{{ APP_MESSAGES.NO_POSTS_YET }}</div>
 
       <div v-for="post in posts" :key="post._id" class="post">
         <div class="post-header">
           <div class="user-info">
             <img :src="getAvatar(post.userId)" class="avatar" />
             <div class="user-details">
-              <span class="username">{{ post.userId?.username || 'Utilisateur inconnu' }}</span>
+              <span class="username">{{ post.userId?.username || APP_MESSAGES.UNKNOWN_USER }}</span>
               <span class="date">{{ formatDate(post.createdAt) }}</span>
             </div>
           </div>
@@ -302,8 +275,8 @@ const formatDate = (dateString) => {
           <div v-if="editingPostId === post._id">
             <textarea v-model="editContent" rows="3" class="edit-textarea"></textarea>
             <div class="edit-buttons">
-              <button class="btn-edit" @click="saveEdit(post)">Enregistrer</button>
-              <button class="btn-edit" @click="cancelEdit">Annuler</button>
+              <button class="btn-edit" @click="saveEdit(post)">{{ APP_MESSAGES.SAVE_BUTTON }}</button>
+              <button class="btn-edit" @click="cancelEdit">{{ APP_MESSAGES.CANCEL_BUTTON }}</button>
             </div>
           </div>
 
@@ -340,40 +313,40 @@ const formatDate = (dateString) => {
                   class="btn-edit"
                   style="padding:0.2rem 0.6rem; font-size:0.8rem;"
                   @click="startEditComment(comment)"
-                >Modifier</button>
+                >{{ APP_MESSAGES.EDIT_BUTTON }}</button>
 
                 <button
                   class="btn-edit"
                   style="padding:0.2rem 0.6rem; font-size:0.8rem; color:red; border-color:red;"
                   @click="deleteComment(post, comment)"
-                >Supprimer</button>
+                >{{ APP_MESSAGES.DELETE_BUTTON }}</button>
               </div>
 
               </div>
 
               <div v-if="editingCommentId === comment._id" class="edit-comment-area">
-                <textarea v-model="editCommentContent" rows="2" class="edit-textarea"></textarea>
-                <div class="edit-buttons">
-                  <button class="btn-edit" @click="saveEditComment(post, comment)">Enregistrer</button>
-                  <button class="btn-edit" @click="cancelEditComment">Annuler</button>
-                </div>
-              </div>
-              <div v-else>
+            <textarea v-model="editCommentContent" rows="2" class="edit-textarea"></textarea>
+            <div class="edit-buttons">
+              <button class="btn-edit" @click="saveEditComment(post, comment)">{{ APP_MESSAGES.SAVE_BUTTON }}</button>
+              <button class="btn-edit" @click="cancelEditComment">{{ APP_MESSAGES.CANCEL_BUTTON }}</button>
+            </div>
+          </div>
+          <div v-else>
                 <div class="comment-content">{{ comment.content }}</div>
-                <div class="comment-date">{{ new Date(comment.createdAt).toLocaleString() }}</div>
+                <div class="comment-date">{{ formatDate(comment.createdAt) }}</div>
               </div>
             </div>
           </div>
 
-          <div v-else class="no-comments">Aucun commentaire pour le moment.</div>
+          <div v-else class="no-comments">{{ APP_MESSAGES.NO_COMMENTS }}</div>
 
           <div class="add-comment">
             <input
               v-model="newComment"
-              placeholder="Écrire un commentaire..."
+              :placeholder="APP_MESSAGES.WRITE_COMMENT_PLACEHOLDER"
               @keyup.enter="addComment(post)"
             />
-            <button class="btn-edit" @click="addComment(post)">Envoyer</button>
+            <button class="btn-edit" @click="addComment(post)">{{ APP_MESSAGES.SEND_BUTTON }}</button>
           </div>
         </div>
       </div>

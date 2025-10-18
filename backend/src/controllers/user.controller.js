@@ -2,6 +2,7 @@ import User from "../models/user.model.js";
 import Post from "../models/post.model.js";
 import Like from "../models/like.model.js";
 import bcrypt from "bcryptjs";
+import { ERROR_MESSAGES } from "../utils/constants.js";
 
 class UserController {
     async createUser(req, res) {
@@ -9,14 +10,14 @@ class UserController {
             const { username, email, password, profilePicture } = req.body;
 
             if (!username || !email || !password) {
-                return res.status(400).json({ msg: "Missing required fields" });
+                return res.status(400).json({ msg: ERROR_MESSAGES.MISSING_FIELDS });
             }
 
             if (
                 (await User.findOne({ username })) ||
                 (await User.findOne({ email }))
             ) {
-                return res.status(400).json({ msg: "User already exists" });
+                return res.status(400).json({ msg: ERROR_MESSAGES.USER_EXISTS });
             }
 
             let user = new User({
@@ -42,7 +43,7 @@ class UserController {
             });
         } catch (err) {
             console.error(err.message);
-            return res.status(500).send("Server error");
+            return res.status(500).json({ msg: ERROR_MESSAGES.SERVER_ERROR });
         }
     }
 
@@ -50,15 +51,15 @@ class UserController {
         try {
             const user = await User.findById(req.params.id).select("-password");
             if (!user) {
-                return res.status(404).json({ msg: "User not found" });
+                return res.status(404).json({ msg: ERROR_MESSAGES.USER_NOT_FOUND });
             }
             return res.status(200).json(user);
         } catch (err) {
             console.error(err.message);
             if (err.kind === "ObjectId") {
-                return res.status(400).json({ msg: "Invalid user ID" });
+                return res.status(400).json({ msg: ERROR_MESSAGES.INVALID_USER_ID });
             }
-            return res.status(500).send("Server error");
+            return res.status(500).json({ msg: ERROR_MESSAGES.SERVER_ERROR });
         }
     }
 
@@ -68,14 +69,14 @@ class UserController {
             return res.status(200).json(users);
         } catch (err) {
             console.error(err.message);
-            return res.status(500).send("Server error");
+            return res.status(500).json({ msg: ERROR_MESSAGES.SERVER_ERROR });
         }
     }
 
     async updateUser(req, res) {
         try {
             if (!req.body) {
-                return res.status(400).json({ msg: "Request body is missing" });
+                return res.status(400).json({ msg: ERROR_MESSAGES.REQUEST_BODY_MISSING });
             }
             const { username, email, profilePicture } = req.body;
             const updatedUser = await User.findByIdAndUpdate(
@@ -84,17 +85,17 @@ class UserController {
                 { new: true, runValidators: true }
             );
             if (!updatedUser) {
-                return res.status(404).json({ msg: "User not found" });
+                return res.status(404).json({ msg: ERROR_MESSAGES.USER_NOT_FOUND });
             }
             return res
                 .status(200)
-                .json({ msg: "User updated successfully", user: updatedUser });
+                .json({ msg: `User updated successfully`, user: updatedUser });
         } catch (err) {
             console.error(err.message);
             if (err.kind === "ObjectId") {
-                return res.status(400).json({ msg: "Invalid user ID" });
+                return res.status(400).json({ msg: ERROR_MESSAGES.INVALID_USER_ID });
             }
-            return res.status(500).send("Server error");
+            return res.status(500).json({ msg: ERROR_MESSAGES.SERVER_ERROR });
         }
     }
 
@@ -103,24 +104,25 @@ class UserController {
             const { email, password } = req.body;
 
             if (!email || !password) {
-                return res.status(400).json({ msg: "Missing required fields" });
+                return res.status(400).json({ msg: ERROR_MESSAGES.MISSING_FIELDS });
             }
 
             const user = await User.findOne({ email }).select("+password");
             if (!user) {
-                return res.status(400).json({ msg: "User not found" });
+                return res.status(400).json({ msg: ERROR_MESSAGES.USER_NOT_FOUND });
             }
 
             const isMatch = await bcrypt.compare(password, user.password);
             if (!isMatch) {
-                return res.status(400).json({ msg: "Incorrect password" });
+                return res.status(400).json({ msg: ERROR_MESSAGES.INCORRECT_PASSWORD });
             }
 
             req.session.userId = user._id;
+            const isProduction = process.env.NODE_ENV === 'production';
             res.cookie("sessionId", user._id.toString(), {
                 httpOnly: true,
-                secure: true,
-                sameSite: "none",
+                secure: isProduction,
+                sameSite: isProduction ? "none" : "lax",
                 path: "/",
                 maxAge: 1000 * 60 * 60 * 24,
             });
@@ -133,7 +135,7 @@ class UserController {
                 });
         } catch (err) {
             console.error(err.message);
-            return res.status(500).send("Server error");
+            return res.status(500).json({ msg: ERROR_MESSAGES.SERVER_ERROR });
         }
     }
 
@@ -142,14 +144,14 @@ class UserController {
             req.session.destroy((err) => {
                 if (err) {
                     console.error(err.message);
-                    return res.status(500).send("Could not log out");
+                    return res.status(500).json({ msg: ERROR_MESSAGES.COULD_NOT_LOG_OUT });
                 }
                 res.clearCookie("sessionId");
                 return res.status(200).json({ msg: "Logged out successfully" });
             });
         } catch (err) {
             console.error(err.message);
-            return res.status(500).send("Server error");
+            return res.status(500).json({ msg: ERROR_MESSAGES.SERVER_ERROR });
         }
     }
 
@@ -157,12 +159,12 @@ class UserController {
         try {
             const user = await User.findById(req.user.id).select("-password");
             if (!user) {
-                return res.status(404).json({ msg: "User not found" });
+                return res.status(404).json({ msg: ERROR_MESSAGES.USER_NOT_FOUND });
             }
             return res.status(200).json(user);
         } catch (err) {
             console.error(err.message);
-            return res.status(500).send("Server error");
+            return res.status(500).json({ msg: ERROR_MESSAGES.SERVER_ERROR });
         }
     }
 
@@ -171,7 +173,7 @@ class UserController {
             return res.status(200).json({ msg: "User is logged in" });
         } catch (err) {
             console.error(err.message);
-            return res.status(500).send("Server error");
+            return res.status(500).json({ msg: ERROR_MESSAGES.SERVER_ERROR });
         }
     }
 
@@ -288,7 +290,7 @@ class UserController {
             });
         } catch (err) {
             console.error(err.message);
-            return res.status(500).send("Server error");
+            return res.status(500).json({ msg: ERROR_MESSAGES.SERVER_ERROR });
         }
     }
 }

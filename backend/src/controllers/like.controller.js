@@ -1,29 +1,29 @@
 import Like from '../models/like.model.js';
 import Post from '../models/post.model.js';
-import User from '../models/user.model.js';
+import { ERROR_MESSAGES } from '../utils/constants.js';
 
 class LikeController {
     async likePost(req, res) {
         try {
             if (!req.body) {
-                return res.status(400).json({ msg: "Request body is missing" });
+                return res.status(400).json({ msg: ERROR_MESSAGES.REQUEST_BODY_MISSING });
             }
 
             const { postId } = req.body;
             const userId = req.user._id;
 
             if (!postId) {
-                return res.status(400).json({ msg: 'Missing required fields' });
+                return res.status(400).json({ msg: ERROR_MESSAGES.MISSING_FIELDS });
             }
 
             const postExists = await Post.findById(postId);
             if (!postExists) {
-                return res.status(404).json({ msg: 'Post not found' });
+                return res.status(404).json({ msg: ERROR_MESSAGES.POST_NOT_FOUND });
             }
 
             const existingLike = await Like.findOne({ postId, userId });
             if (existingLike) {
-                return res.status(400).json({ msg: 'User already liked this post' });
+                return res.status(400).json({ msg: ERROR_MESSAGES.USER_ALREADY_LIKED_POST });
             }
 
             const newLike = new Like({
@@ -38,27 +38,27 @@ class LikeController {
             return res.status(201).json({ msg: 'Post liked successfully', like: newLike });
         } catch (err) {
             console.error(err.message);
-            return res.status(500).send('Server error');
+            return res.status(500).json({ msg: ERROR_MESSAGES.SERVER_ERROR });
         }
     }
 
     async unlikePost(req, res) {
         try {
             if (!req.body) {
-                return res.status(400).json({ msg: "Request body is missing" });
+                return res.status(400).json({ msg: ERROR_MESSAGES.REQUEST_BODY_MISSING });
             }
 
             const { postId } = req.body;
             const userId = req.user._id;
 
             if (!postId) {
-                return res.status(400).json({ msg: 'Missing required fields' });
+                return res.status(400).json({ msg: ERROR_MESSAGES.MISSING_FIELDS });
             }
 
             const deletedLike = await Like.findOneAndDelete({ postId, userId });
 
             if (!deletedLike) {
-                return res.status(404).json({ msg: 'Like not found or user did not like this post' });
+                return res.status(404).json({ msg: ERROR_MESSAGES.LIKE_NOT_FOUND });
             }
 
             await Post.findByIdAndUpdate(postId, { $inc: { likesCount: -1 } });
@@ -66,7 +66,7 @@ class LikeController {
             return res.status(200).json({ msg: 'Post unliked successfully' });
         } catch (err) {
             console.error(err.message);
-            return res.status(500).send('Server error');
+            return res.status(500).json({ msg: ERROR_MESSAGES.SERVER_ERROR });
         }
     }
 
@@ -77,7 +77,7 @@ class LikeController {
             return res.status(200).json(likes);
         } catch (err) {
             console.error(err.message);
-            return res.status(500).send('Server error');
+            return res.status(500).json({ msg: ERROR_MESSAGES.SERVER_ERROR });
         }
     }
 
@@ -102,7 +102,7 @@ class LikeController {
             return res.status(200).json({ posts });
         } catch (err) {
             console.error(err.message);
-            return res.status(500).send('Server error');
+            return res.status(500).json({ msg: ERROR_MESSAGES.SERVER_ERROR });
         }
     }
 }

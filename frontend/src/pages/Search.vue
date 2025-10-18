@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { Heart, MessageCircleMore, Search as SearchIcon } from 'lucide-vue-next'
+import { APP_MESSAGES } from '../utils/messages.js'
+import { getAvatar, formatDate } from '../utils/helpers.js'
 
 const posts = ref([])
 const loading = ref(false)
@@ -16,7 +18,7 @@ const getCurrentUser = async () => {
     const res = await fetch(`${import.meta.env.BACKEND_URL}/users/profile`, { credentials: 'include' })
     if (res.ok) user.value = await res.json()
   } catch (err) {
-    console.error('Erreur utilisateur:', err)
+    console.error(APP_MESSAGES.CONSOLE_USER_ERROR, err)
   }
 }
 
@@ -29,7 +31,7 @@ const searchPosts = async () => {
 
   try {
     const res = await fetch(`${import.meta.env.BACKEND_URL}/posts`, { credentials: 'include' })
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    if (!res.ok) throw new Error(APP_MESSAGES.HTTP_ERROR(res.status))
     const data = await res.json()
 
     const query = searchQuery.value.toLowerCase()
@@ -44,7 +46,7 @@ const searchPosts = async () => {
       await loadComments(post)
     }
   } catch (err) {
-    console.error('Erreur lors de la recherche des posts:', err)
+    console.error(APP_MESSAGES.CONSOLE_SEARCH_POSTS_ERROR, err)
     error.value = err.message
   } finally {
     loading.value = false
@@ -60,7 +62,7 @@ const loadLikes = async (post) => {
       post.userLiked = user.value ? likes.some(like => like.userId._id === user.value._id) : false
     }
   } catch (err) {
-    console.error('Erreur lors du chargement des likes:', err)
+    console.error(APP_MESSAGES.CONSOLE_LOAD_LIKES_ERROR, err)
   }
 }
 
@@ -73,14 +75,14 @@ const loadComments = async (post) => {
       post.comments = []
     }
   } catch (err) {
-    console.error('Erreur lors du chargement des commentaires:', err)
+    console.error(APP_MESSAGES.CONSOLE_LOAD_COMMENTS_ERROR, err)
     post.comments = []
   }
 }
 
 const toggleLike = async (post) => {
   if (!user.value) {
-    alert('Vous devez être connecté pour liker un post.')
+    alert(APP_MESSAGES.UNAUTHORIZED_LIKE_POST)
     return
   }
 
@@ -94,12 +96,12 @@ const toggleLike = async (post) => {
       body: JSON.stringify({ postId: post._id })
     })
 
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    if (!res.ok) throw new Error(APP_MESSAGES.HTTP_ERROR(res.status))
 
     post.userLiked = !alreadyLiked
     post.likesCount += alreadyLiked ? -1 : 1
   } catch (err) {
-    console.error('Erreur lors du like:', err)
+    console.error(APP_MESSAGES.CONSOLE_LIKE_ERROR, err)
   }
 }
 
@@ -109,7 +111,7 @@ const toggleComments = (postId) => {
 
 const addComment = async (post) => {
   if (!user.value) {
-    alert('Vous devez être connecté pour commenter.')
+    alert(APP_MESSAGES.UNAUTHORIZED_COMMENT)
     return
   }
 
@@ -127,7 +129,7 @@ const addComment = async (post) => {
       })
     })
 
-    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`)
+    if (!res.ok) throw new Error(APP_MESSAGES.HTTP_ERROR(res.status))
     const createdComment = await res.json()
 
     const normalizedComment = {
@@ -141,46 +143,17 @@ const addComment = async (post) => {
 
     newComment.value = ''
   } catch (err) {
-    console.error('Erreur lors de l\'ajout du commentaire:', err)
+    console.error(APP_MESSAGES.CONSOLE_ADD_COMMENT_ERROR, err)
   }
 }
 
-const getAvatar = (userData) => {
-  if (!userData) return defaultAvatar('U')
-  if (userData.profilePicture) return userData.profilePicture
-  return defaultAvatar(userData.username?.charAt(0).toUpperCase() || 'U')
-}
-
-const defaultAvatar = (letter) => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50">
-    <rect width="50" height="50" fill="#ccc"/>
-    <text x="50%" y="50%" font-size="24" text-anchor="middle" dominant-baseline="central" fill="#000">${letter}</text>
-  </svg>`
-  return `data:image/svg+xml;base64,${btoa(svg)}`
-}
-
-const formatDate = (dateString) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  const now = new Date()
-  const diff = now - date
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-
-  if (minutes < 1) return 'À l\'instant'
-  if (minutes < 60) return `Il y a ${minutes} min`
-  if (hours < 24) return `Il y a ${hours}h`
-  if (days < 7) return `Il y a ${days}j`
-  return date.toLocaleDateString('fr-FR')
-}
 
 getCurrentUser()
 </script>
 
 <template>
   <div class="search-page">
-    <h1>Rechercher des posts</h1>
+    <h1>{{ APP_MESSAGES.SEARCH_PAGE_TITLE }}</h1>
 
     <div class="search-bar">
       <div class="search-input-wrapper">
@@ -188,20 +161,20 @@ getCurrentUser()
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Rechercher par contenu ou nom d'utilisateur..."
+          :placeholder="APP_MESSAGES.SEARCH_PLACEHOLDER"
           @keyup.enter="searchPosts"
           class="search-input"
         />
       </div>
-      <button @click="searchPosts" class="search-button">Rechercher</button>
+      <button @click="searchPosts" class="search-button">{{ APP_MESSAGES.SEARCH_BUTTON }}</button>
     </div>
 
-    <div v-if="loading" class="status">Recherche en cours...</div>
+    <div v-if="loading" class="status">{{ APP_MESSAGES.SEARCHING_IN_PROGRESS }}</div>
     <div v-else-if="error" class="status error">{{ error }}</div>
 
     <div v-else-if="hasSearched" class="posts">
       <div v-if="posts.length === 0" class="no-posts">
-        Aucun post trouvé pour "{{ searchQuery }}".
+        {{ APP_MESSAGES.NO_POSTS_FOUND(searchQuery) }}
       </div>
 
       <div v-for="post in posts" :key="post._id" class="post">
@@ -209,7 +182,7 @@ getCurrentUser()
           <div class="user-info">
             <img :src="getAvatar(post.userId)" class="avatar" />
             <div class="user-details">
-              <span class="username">{{ post.userId?.username || 'Utilisateur inconnu' }}</span>
+              <span class="username">{{ post.userId?.username || APP_MESSAGES.UNKNOWN_USER }}</span>
               <span class="date">{{ formatDate(post.createdAt) }}</span>
             </div>
           </div>
@@ -241,7 +214,7 @@ getCurrentUser()
             <div v-for="comment in post.comments" :key="comment._id" class="comment">
               <div class="comment-header">
                 <img :src="getAvatar(comment.userId)" class="avatar" />
-                <span class="comment-username">{{ comment.userId?.username || 'Utilisateur inconnu' }}</span>
+                <span class="comment-username">{{ comment.userId?.username || APP_MESSAGES.UNKNOWN_USER }}</span>
               </div>
 
               <div class="comment-content">
@@ -254,15 +227,15 @@ getCurrentUser()
             </div>
           </div>
 
-          <div v-else class="no-comments">Aucun commentaire pour le moment.</div>
+          <div v-else class="no-comments">{{ APP_MESSAGES.NO_COMMENTS }}</div>
 
           <div class="add-comment">
             <input
               v-model="newComment"
-              placeholder="Écrire un commentaire..."
+              :placeholder="APP_MESSAGES.WRITE_COMMENT_PLACEHOLDER"
               @keyup.enter="addComment(post)"
             />
-            <button @click="addComment(post)">Envoyer</button>
+            <button @click="addComment(post)">{{ APP_MESSAGES.SEND_BUTTON }}</button>
           </div>
         </div>
       </div>
@@ -270,7 +243,7 @@ getCurrentUser()
 
     <div v-else class="search-placeholder">
       <SearchIcon class="placeholder-icon" />
-      <p>Utilisez la barre de recherche pour trouver des posts</p>
+      <p>{{ APP_MESSAGES.SEARCH_PLACEHOLDER_TEXT }}</p>
     </div>
   </div>
 </template>

@@ -1,14 +1,14 @@
 <template>
   <div class="container">
     <div class="card">
-      <h1>Connexion</h1>
+      <h1>{{ APP_MESSAGES.LOGIN_TITLE }}</h1>
 
       <form @submit.prevent="handleLogin">
         <div class="input-group">
           <input
             v-model="email"
             type="email"
-            placeholder="Email"
+            :placeholder="APP_MESSAGES.EMAIL_PLACEHOLDER"
             required
           />
         </div>
@@ -17,61 +17,52 @@
           <input
             v-model="password"
             type="password"
-            placeholder="Mot de passe"
+            :placeholder="APP_MESSAGES.PASSWORD_PLACEHOLDER"
             required
           />
         </div>
 
         <button type="submit" class="btn">
-          Se connecter
+          {{ APP_MESSAGES.LOGIN_BUTTON }}
         </button>
       </form>
 
       <p class="footer-text">
-        Pas de compte ?
-        <a href="/register">S'inscrire</a>
+        {{ APP_MESSAGES.NO_ACCOUNT_TEXT }}
+        <a href="/register">{{ APP_MESSAGES.REGISTER_LINK }}</a>
       </p>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
+import { APP_MESSAGES } from '../utils/messages.js';
 
-export default {
-  name: 'Login',
-  setup() {
-    const router = useRouter();
-    return { router };
-  },
-  data() {
-    return {
-      email: '',
-      password: ''
-    };
-  },
-  methods: {
-    async handleLogin() {
-      try {
-        const response = await axios.post(`${import.meta.env.BACKEND_URL}/users/login`, {
-          email: this.email,
-          password: this.password
-        });
-        console.log('Connexion réussie:', response.data);
-        alert('Connexion réussie !');
-        this.router.push('/');
-      } catch (error) {
-        console.error('Erreur lors de la connexion:', error.response ? error.response.data : error.message);
-        let errorMessage = 'Erreur lors de la connexion.';
-        if (error.response && error.response.data && error.response.data.msg) {
-          errorMessage = 'Erreur lors de la connexion: ' + error.response.data.msg;
-        } else if (error.message) {
-          errorMessage = 'Erreur lors de la connexion: ' + error.message;
-        }
-        alert(errorMessage);
-      }
+const email = ref('');
+const password = ref('');
+const router = useRouter();
+
+const handleLogin = async () => {
+  try {
+    const response = await axios.post(`${import.meta.env.BACKEND_URL}/users/login`, {
+      email: email.value,
+      password: password.value
+    });
+    console.log(APP_MESSAGES.CONSOLE_LOGIN_SUCCESS, response.data);
+    alert(APP_MESSAGES.LOGIN_SUCCESS_ALERT);
+    router.push('/');
+  } catch (error) {
+    console.error(APP_MESSAGES.CONSOLE_LOGIN_ERROR, error.response ? error.response.data : error.message);
+    let errorMessage = APP_MESSAGES.LOGIN_ERROR_ALERT;
+    if (error.response && error.response.data && error.response.data.msg) {
+      errorMessage = APP_MESSAGES.LOGIN_ERROR_WITH_MESSAGE(error.response.data.msg);
+    } else if (error.message) {
+      errorMessage = APP_MESSAGES.LOGIN_ERROR_WITH_MESSAGE(error.message);
     }
+    alert(errorMessage);
   }
 };
 </script>
