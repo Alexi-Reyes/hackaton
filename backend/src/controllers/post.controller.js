@@ -1,5 +1,4 @@
 import Post from '../models/post.model.js';
-import User from '../models/user.model.js';
 
 class PostController {
     async createPost(req, res) {

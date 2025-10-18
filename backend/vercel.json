@@ -22,6 +22,10 @@
     {
       "src": "/likes/(.*)",
       "dest": "index.js"
+    },
+    {
+      "src": "/api-docs/(.*)",
+      "dest": "index.js"
     }
   ]
 }
